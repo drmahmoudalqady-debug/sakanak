@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { KeyRound, Loader2, CheckCircle2 } from 'lucide-react';
-import { updatePassword } from '@/lib/data-service';
+import { updatePassword, isAdminUser } from '@/lib/data-service';
 import { supabase } from '@/lib/supabase';
 
 export default function ResetPasswordPage() {
@@ -64,8 +64,14 @@ export default function ResetPasswordPage() {
           <div className="space-y-4 text-center">
             <CheckCircle2 className="mx-auto h-10 w-10 text-primary" />
             <p className="text-sm text-muted-foreground">تم تحديث كلمة السر بنجاح.</p>
-            <Button className="w-full" onClick={() => navigate('/admin')}>
-              الذهاب لتسجيل الدخول
+            <Button
+              className="w-full"
+              onClick={async () => {
+                const { data } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
+                navigate(isAdminUser(data.session?.user ?? null) ? '/admin' : '/');
+              }}
+            >
+              متابعة
             </Button>
           </div>
         ) : (

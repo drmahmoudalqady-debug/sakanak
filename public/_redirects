@@ -1,0 +1,2 @@
+# Netlify: توجيه كل المسارات إلى index.html لأن الموقع Single Page Application
+/*    /index.html   200

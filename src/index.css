@@ -1,0 +1,200 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* هوية "مسكن": أزرق النيل + ذهبي رملي بطابع صعيدي */
+    --background: 40 33% 98%;
+    --foreground: 200 30% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 200 30% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 200 30% 12%;
+    --primary: 188 72% 26%;
+    --primary-foreground: 40 40% 97%;
+    --secondary: 40 40% 93%;
+    --secondary-foreground: 200 30% 16%;
+    --muted: 42 25% 93%;
+    --muted-foreground: 200 12% 42%;
+    --accent: 38 75% 50%;
+    --accent-foreground: 200 40% 10%;
+    --destructive: 0 72% 48%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 40 20% 88%;
+    --input: 40 20% 85%;
+    --ring: 188 72% 26%;
+    --radius: 0.75rem;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+  }
+}
+
+/* ============ خلفية ثلاثية الأبعاد للصفحة الرئيسية ============ */
+
+.scene-3d {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  perspective: 1000px;
+  background:
+    radial-gradient(ellipse 80% 60% at 70% -10%, hsl(188 80% 32% / 0.9), transparent 60%),
+    radial-gradient(ellipse 60% 50% at 15% 110%, hsl(38 85% 45% / 0.35), transparent 65%),
+    linear-gradient(165deg, hsl(197 65% 10%) 0%, hsl(190 70% 16%) 45%, hsl(185 60% 12%) 100%);
+}
+
+/* أرضية شبكية بمنظور ثلاثي الأبعاد */
+.scene-grid {
+  position: absolute;
+  inset-inline: -50%;
+  bottom: -12%;
+  height: 60%;
+  transform: rotateX(72deg);
+  transform-origin: bottom;
+  background-image:
+    linear-gradient(hsl(188 60% 55% / 0.14) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(188 60% 55% / 0.14) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: linear-gradient(to top, black 30%, transparent 95%);
+  -webkit-mask-image: linear-gradient(to top, black 30%, transparent 95%);
+  animation: grid-drift 14s linear infinite;
+}
+
+@keyframes grid-drift {
+  from { background-position: 0 0, 0 0; }
+  to { background-position: 0 56px, 0 0; }
+}
+
+/* كرات ضوئية عائمة */
+.orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(50px);
+  opacity: 0.55;
+  will-change: transform;
+}
+
+.orb-1 {
+  width: 340px; height: 340px;
+  background: radial-gradient(circle at 35% 35%, hsl(38 90% 60% / 0.8), hsl(30 85% 45% / 0.25));
+  top: 8%; inset-inline-start: 6%;
+  animation: float-a 11s ease-in-out infinite;
+}
+
+.orb-2 {
+  width: 260px; height: 260px;
+  background: radial-gradient(circle at 40% 40%, hsl(188 85% 55% / 0.7), hsl(195 80% 30% / 0.2));
+  top: 45%; inset-inline-end: 4%;
+  animation: float-b 14s ease-in-out infinite;
+}
+
+.orb-3 {
+  width: 180px; height: 180px;
+  background: radial-gradient(circle at 40% 40%, hsl(160 60% 50% / 0.5), transparent 70%);
+  top: 60%; inset-inline-start: 30%;
+  animation: float-a 17s ease-in-out infinite reverse;
+}
+
+@keyframes float-a {
+  0%, 100% { transform: translate3d(0, 0, 60px) scale(1); }
+  50% { transform: translate3d(30px, -36px, 120px) scale(1.08); }
+}
+
+@keyframes float-b {
+  0%, 100% { transform: translate3d(0, 0, 40px) scale(1); }
+  50% { transform: translate3d(-28px, 30px, 100px) scale(0.94); }
+}
+
+/* أشكال هندسية عائمة بطبقات عمق مختلفة */
+.geo {
+  position: absolute;
+  border: 1.5px solid hsl(188 70% 65% / 0.35);
+  will-change: transform;
+}
+
+.geo-diamond {
+  width: 90px; height: 90px;
+  transform: rotate(45deg);
+  top: 20%; inset-inline-end: 18%;
+  animation: spin-slow 26s linear infinite, float-b 12s ease-in-out infinite;
+  border-color: hsl(38 85% 60% / 0.4);
+}
+
+.geo-ring {
+  width: 130px; height: 130px;
+  border-radius: 9999px;
+  top: 12%; inset-inline-start: 38%;
+  animation: float-a 16s ease-in-out infinite;
+}
+
+.geo-square {
+  width: 54px; height: 54px;
+  border-radius: 12px;
+  top: 55%; inset-inline-end: 35%;
+  animation: spin-slow 20s linear infinite reverse, float-a 10s ease-in-out infinite;
+}
+
+@keyframes spin-slow {
+  from { rotate: 0deg; }
+  to { rotate: 360deg; }
+}
+
+/* أفق مباني مدينة المنيا (طبقة عمق بعيدة) */
+.city-skyline {
+  position: absolute;
+  bottom: 0;
+  inset-inline: 0;
+  width: 100%;
+  height: 220px;
+  opacity: 0.9;
+}
+
+/* تقليل الحركة لمن يفضل ذلك */
+@media (prefers-reduced-motion: reduce) {
+  .orb, .geo, .scene-grid { animation: none !important; }
+}
+
+/* ============ لمسات عامة ============ */
+
+/* ظل بطاقات دافئ */
+.card-glow {
+  box-shadow: 0 1px 2px hsl(200 30% 12% / 0.05), 0 8px 24px -8px hsl(188 60% 25% / 0.14);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.card-glow:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 2px 4px hsl(200 30% 12% / 0.06), 0 16px 40px -10px hsl(188 60% 25% / 0.25);
+}
+
+/* نص متدرج ذهبي */
+.text-gold-gradient {
+  background: linear-gradient(120deg, hsl(38 90% 65%), hsl(30 85% 55%), hsl(45 95% 62%));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* سكرول بار خفيف */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: hsl(40 25% 94%); }
+::-webkit-scrollbar-thumb { background: hsl(188 40% 40% / 0.5); border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: hsl(188 50% 35% / 0.7); }

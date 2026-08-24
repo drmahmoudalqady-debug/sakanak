@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { GraduationCap, Loader2, MessageCircle } from 'lucide-react';
-import { signupStudent, loginStudent } from '@/lib/data-service';
+import { GraduationCap, Loader2, MessageCircle, KeyRound } from 'lucide-react';
+import { signupStudent, loginStudent, sendPasswordReset } from '@/lib/data-service';
 import { isSupabaseConfigured } from '@/lib/supabase';
 
 interface Props {
@@ -24,6 +24,8 @@ function friendlyError(err: unknown): string {
   if (msg.includes('weak-password')) return 'كلمة السر ضعيفة — استخدم 6 أحرف على الأقل';
   if (msg.includes('invalid-credential') || msg.includes('wrong-password') || msg.includes('user-not-found'))
     return 'البريد أو كلمة السر غير صحيحة';
+  if (msg.toLowerCase().includes('rate limit'))
+    return 'محاولات كتير في وقت قصير — استنى شوية وحاول تاني';
   return msg || 'حدث خطأ غير متوقع — حاول مرة أخرى';
 }
 
@@ -40,6 +42,11 @@ export default function SignupGate({ open, onClose, onSuccess, context = 'whatsa
 
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+
+  // حالة "نسيت كلمة السر"
+  const [forgotMode, setForgotMode] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotSent, setForgotSent] = useState(false);
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
@@ -83,6 +90,24 @@ export default function SignupGate({ open, onClose, onSuccess, context = 'whatsa
     }
   }
 
+  async function handleForgotPassword(e: React.FormEvent) {
+    e.preventDefault();
+    setError('');
+    if (!forgotEmail.trim()) {
+      setError('من فضلك أدخل بريدك الإلكتروني');
+      return;
+    }
+    setLoading(true);
+    try {
+      await sendPasswordReset(forgotEmail.trim());
+      setForgotSent(true);
+    } catch (err) {
+      setError(friendlyError(err));
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-md" dir="rtl">
@@ -102,7 +127,7 @@ export default function SignupGate({ open, onClose, onSuccess, context = 'whatsa
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={tab} onValueChange={(v) => { setTab(v as 'signup' | 'login'); setError(''); }}>
+        <Tabs value={tab} onValueChange={(v) => { setTab(v as 'signup' | 'login'); setError(''); setForgotMode(false); setForgotSent(false); }}>
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="signup">تسجيل جديد</TabsTrigger>
             <TabsTrigger value="login">مسجل بالفعل</TabsTrigger>
@@ -155,21 +180,68 @@ export default function SignupGate({ open, onClose, onSuccess, context = 'whatsa
 
           {/* نموذج دخول لطالب مسجل */}
           <TabsContent value="login">
-            <form onSubmit={handleLogin} className="space-y-3 pt-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="login_email">البريد الإلكتروني</Label>
-                <Input id="login_email" type="email" dir="ltr" className="text-end" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} placeholder="you@mail.com" />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="login_password">كلمة السر</Label>
-                <Input id="login_password" type="password" dir="ltr" className="text-end" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} />
-              </div>
-              {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
-              <Button type="submit" disabled={loading} className="w-full bg-[#25D366] text-white hover:bg-[#1eb85a]">
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />}
-                {loading ? 'جارٍ الدخول...' : context === 'header' ? 'دخول' : 'ادخل وافتح واتساب'}
-              </Button>
-            </form>
+            {forgotMode ? (
+              forgotSent ? (
+                <div className="space-y-3 pt-2 text-center">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                    <KeyRound className="h-6 w-6 text-primary" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    لو الإيميل ده مسجل عندنا، هيوصلك رابط لإعادة تعيين كلمة السر. افتحه من نفس الجهاز لو أمكن.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => { setForgotMode(false); setForgotSent(false); setForgotEmail(''); setError(''); }}
+                  >
+                    الرجوع لتسجيل الدخول
+                  </Button>
+                </div>
+              ) : (
+                <form onSubmit={handleForgotPassword} className="space-y-3 pt-2">
+                  <p className="text-sm text-muted-foreground">
+                    اكتب بريدك الإلكتروني وهنبعتلك رابط لإعادة تعيين كلمة السر.
+                  </p>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="forgot_email">البريد الإلكتروني</Label>
+                    <Input id="forgot_email" type="email" dir="ltr" className="text-end" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} placeholder="you@mail.com" />
+                  </div>
+                  {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
+                  <div className="flex gap-2">
+                    <Button type="button" variant="outline" className="flex-1" onClick={() => { setForgotMode(false); setError(''); }}>
+                      رجوع
+                    </Button>
+                    <Button type="submit" disabled={loading} className="flex-1 bg-[#25D366] text-white hover:bg-[#1eb85a]">
+                      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'إرسال الرابط'}
+                    </Button>
+                  </div>
+                </form>
+              )
+            ) : (
+              <form onSubmit={handleLogin} className="space-y-3 pt-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="login_email">البريد الإلكتروني</Label>
+                  <Input id="login_email" type="email" dir="ltr" className="text-end" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} placeholder="you@mail.com" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="login_password">كلمة السر</Label>
+                  <Input id="login_password" type="password" dir="ltr" className="text-end" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setForgotMode(true); setForgotEmail(loginEmail); setError(''); }}
+                  className="block text-start text-xs text-primary hover:underline"
+                >
+                  نسيت كلمة السر؟
+                </button>
+                {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
+                <Button type="submit" disabled={loading} className="w-full bg-[#25D366] text-white hover:bg-[#1eb85a]">
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />}
+                  {loading ? 'جارٍ الدخول...' : context === 'header' ? 'دخول' : 'ادخل وافتح واتساب'}
+                </Button>
+              </form>
+            )}
           </TabsContent>
         </Tabs>
       </DialogContent>

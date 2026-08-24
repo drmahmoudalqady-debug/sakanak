@@ -7,7 +7,7 @@ import { isSupabaseConfigured } from '@/lib/supabase';
 interface AppContextValue {
   listings: Listing[];
   loadingListings: boolean;
-  student: { id: string; email: string } | null;
+  student: { id: string; email: string; full_name?: string } | null;
   isDemoMode: boolean;
 }
 
@@ -21,7 +21,7 @@ const AppContext = createContext<AppContextValue>({
 export function AppProvider({ children }: { children: ReactNode }) {
   const [listings, setListings] = useState<Listing[]>([]);
   const [loadingListings, setLoadingListings] = useState(true);
-  const [student, setStudent] = useState<{ id: string; email: string } | null>(null);
+  const [student, setStudent] = useState<{ id: string; email: string; full_name?: string } | null>(null);
 
   useEffect(() => {
     const unsubListings = subscribeListings((data) => {

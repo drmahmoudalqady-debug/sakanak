@@ -254,6 +254,9 @@ export async function signupStudent(data: StudentSignupData): Promise<void> {
   const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
     email: data.email,
     password: data.password,
+    options: {
+      data: { full_name: data.full_name }, // بيتخزن في user_metadata عشان نعرضه في الهيدر من غير query إضافي
+    },
   });
   if (signUpError) throw new Error(`فشل التسجيل: ${signUpError.message}`);
   if (!signUpData.user) throw new Error('تعذّر إنشاء الحساب');
@@ -292,7 +295,7 @@ export async function logoutStudent(): Promise<void> {
 }
 
 // متابعة حالة تسجيل الطالب (الجلسة تفضل فعالة في الزيارات التالية)
-export function subscribeStudent(callback: (student: { id: string; email: string } | null) => void): () => void {
+export function subscribeStudent(callback: (student: { id: string; email: string; full_name?: string } | null) => void): () => void {
   if (!isSupabaseConfigured || !supabase) {
     const emit = () => {
       try {
@@ -307,7 +310,11 @@ export function subscribeStudent(callback: (student: { id: string; email: string
 
   const emit = (user: User | null) => {
     // الأدمن لا يُعتبر طالبًا
-    callback(user && !isAdminUser(user) ? { id: user.id, email: user.email || '' } : null);
+    callback(
+      user && !isAdminUser(user)
+        ? { id: user.id, email: user.email || '', full_name: (user.user_metadata as { full_name?: string })?.full_name }
+        : null
+    );
   };
 
   supabase.auth.getSession().then(({ data }) => emit(data.session?.user ?? null));

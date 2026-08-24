@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { Home, ShieldCheck, User, LogOut } from 'lucide-react';
+import { Home, ShieldCheck, User, LogOut, CircleUserRound } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -32,14 +32,25 @@ export default function Header() {
             </Badge>
           )}
           {student ? (
-            <button
-              onClick={() => logoutStudent()}
-              className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-              title="تسجيل الخروج"
-            >
-              <LogOut className="h-4 w-4" />
-              <span className="hidden sm:inline">خروج</span>
-            </button>
+            <div className="flex items-center gap-1.5">
+              <span
+                className="flex items-center gap-1.5 rounded-lg border border-border/60 bg-secondary/40 px-3 py-2 text-sm font-medium text-foreground"
+                title={student.full_name || student.email}
+              >
+                <CircleUserRound className="h-4 w-4 text-primary" />
+                <span className="max-w-[100px] truncate">
+                  {student.full_name ? student.full_name.trim().split(/\s+/)[0] : student.email}
+                </span>
+              </span>
+              <button
+                onClick={() => logoutStudent()}
+                className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                title="تسجيل الخروج"
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="hidden sm:inline">خروج</span>
+              </button>
+            </div>
           ) : (
             <Button
               onClick={() => setShowSignup(true)}

@@ -12,14 +12,18 @@ import {
 import {
   Plus, Pencil, Trash2, LogOut, Building2, Users as UsersIcon,
   Phone, Mail, GraduationCap, CalendarDays, Loader2, ChevronDown,
+  Settings as SettingsIcon, Save, KeyRound, MessageCircle,
 } from 'lucide-react';
-import type { Listing, Student, Region, Gender } from '@/lib/types';
+import type { Listing, Student, Region, Gender, SiteSettings } from '@/lib/types';
 import { REGION_LABELS, GENDER_LABELS, STATUS_LABELS } from '@/lib/types';
 import {
   subscribeAdmin, adminLogout, deleteListing, getStudents, deleteStudent,
+  getSiteSettings, updateSiteSettings,
 } from '@/lib/data-service';
 import ListingFormDialog from '@/components/admin/ListingFormDialog';
 import { useApp } from '@/context/AppContext';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 export default function AdminDashboardPage() {
   const navigate = useNavigate();
@@ -40,6 +44,42 @@ export default function AdminDashboardPage() {
   const [expandedStudent, setExpandedStudent] = useState<string | null>(null);
   const [deletingStudent, setDeletingStudent] = useState<Student | null>(null);
   const [deletingStudentBusy, setDeletingStudentBusy] = useState(false);
+
+  // ---- إعدادات الموقع (رقم نسيت الباسوورد + رقم عرض الشقق) ----
+  const [settings, setSettings] = useState<SiteSettings>({ forgot_password_contact: '', owner_whatsapp_number: '' });
+  const [loadingSettings, setLoadingSettings] = useState(false);
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [settingsSaved, setSettingsSaved] = useState(false);
+  const [settingsError, setSettingsError] = useState('');
+
+  function loadSettings() {
+    setLoadingSettings(true);
+    setSettingsError('');
+    getSiteSettings()
+      .then(setSettings)
+      .catch((err) => setSettingsError(err instanceof Error ? err.message : 'تعذّر تحميل الإعدادات'))
+      .finally(() => setLoadingSettings(false));
+  }
+
+  useEffect(() => {
+    if (activeTab === 'settings' && isAdmin) loadSettings();
+  }, [activeTab, isAdmin]);
+
+  async function handleSaveSettings(e: React.FormEvent) {
+    e.preventDefault();
+    setSavingSettings(true);
+    setSettingsError('');
+    setSettingsSaved(false);
+    try {
+      await updateSiteSettings(settings);
+      setSettingsSaved(true);
+      setTimeout(() => setSettingsSaved(false), 3000);
+    } catch (err) {
+      setSettingsError(err instanceof Error ? err.message : 'تعذّر حفظ الإعدادات');
+    } finally {
+      setSavingSettings(false);
+    }
+  }
 
   // التحقق من صلاحية الأدمن — غير المصرح لهم يُوجهون لصفحة الدخول
   useEffect(() => {
@@ -128,6 +168,10 @@ export default function AdminDashboardPage() {
           <TabsTrigger value="students" className="gap-2">
             <UsersIcon className="h-4 w-4" />
             الطلاب المسجلون
+          </TabsTrigger>
+          <TabsTrigger value="settings" className="gap-2">
+            <SettingsIcon className="h-4 w-4" />
+            الإعدادات
           </TabsTrigger>
         </TabsList>
 
@@ -282,6 +326,71 @@ export default function AdminDashboardPage() {
                 );
               })}
             </div>
+          )}
+        </TabsContent>
+
+        {/* ================= تبويب الإعدادات ================= */}
+        <TabsContent value="settings" className="max-w-xl">
+          {loadingSettings ? (
+            <div className="flex justify-center py-16">
+              <Loader2 className="h-7 w-7 animate-spin text-primary" />
+            </div>
+          ) : (
+            <form onSubmit={handleSaveSettings} className="space-y-6">
+              <div className="rounded-2xl border border-border/70 bg-card p-5">
+                <div className="mb-3 flex items-center gap-2 font-bold">
+                  <KeyRound className="h-4 w-4 text-primary" />
+                  رقم التواصل لاسترجاع كلمة السر
+                </div>
+                <p className="mb-3 text-sm text-muted-foreground">
+                  يظهر هذا الرقم للطالب لما يدوس على "نسيت كلمة السر" — يتواصل بيك مباشرة عشان تساعده يستعيد حسابه.
+                </p>
+                <div className="space-y-1.5">
+                  <Label htmlFor="forgot_contact">رقم واتساب أو أي وسيلة تواصل</Label>
+                  <Input
+                    id="forgot_contact"
+                    dir="ltr"
+                    className="text-end"
+                    value={settings.forgot_password_contact}
+                    onChange={(e) => setSettings((s) => ({ ...s, forgot_password_contact: e.target.value }))}
+                    placeholder="مثال: 01xxxxxxxxx"
+                  />
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-border/70 bg-card p-5">
+                <div className="mb-3 flex items-center gap-2 font-bold">
+                  <MessageCircle className="h-4 w-4 text-primary" />
+                  رقم واتساب استقبال طلبات عرض الشقق
+                </div>
+                <p className="mb-3 text-sm text-muted-foreground">
+                  يظهر هذا الرقم للمالك لما يدوس على "لعرض شقتك" في نهاية الصفحة الرئيسية.
+                </p>
+                <div className="space-y-1.5">
+                  <Label htmlFor="owner_wa">رقم واتساب (بصيغة دولية بدون +، مثال 2010xxxxxxxx)</Label>
+                  <Input
+                    id="owner_wa"
+                    dir="ltr"
+                    className="text-end"
+                    value={settings.owner_whatsapp_number}
+                    onChange={(e) => setSettings((s) => ({ ...s, owner_whatsapp_number: e.target.value }))}
+                    placeholder="2010xxxxxxxx"
+                  />
+                </div>
+              </div>
+
+              {settingsError && (
+                <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{settingsError}</p>
+              )}
+              {settingsSaved && (
+                <p className="rounded-lg bg-emerald-100 px-3 py-2 text-sm text-emerald-700">تم الحفظ بنجاح</p>
+              )}
+
+              <Button type="submit" disabled={savingSettings} className="gap-2">
+                {savingSettings ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                حفظ الإعدادات
+              </Button>
+            </form>
           )}
         </TabsContent>
       </Tabs>

@@ -1,17 +1,47 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useApp } from '@/context/AppContext';
 import Scene3D from '@/components/Scene3D';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import {
   Building2, Landmark, MessageCircle, Images, ShieldCheck,
-  ArrowDown, Users, GraduationCap, MapPin,
+  ArrowDown, Users, GraduationCap, MapPin, KeyRound, Loader2, Copy, Check,
 } from 'lucide-react';
 import type { Region } from '@/lib/types';
 import { REGION_LABELS } from '@/lib/types';
+import { getSiteSettings } from '@/lib/data-service';
 
 export default function HomePage() {
   const { listings } = useApp();
   const navigate = useNavigate();
+
+  // ديالوج "لعرض شقتك" — يعرض رقم واتساب صاحب الموقع من الإعدادات
+  const [showOwnerContact, setShowOwnerContact] = useState(false);
+  const [ownerNumber, setOwnerNumber] = useState('');
+  const [loadingOwnerNumber, setLoadingOwnerNumber] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  function openOwnerContact() {
+    setShowOwnerContact(true);
+    setLoadingOwnerNumber(true);
+    getSiteSettings()
+      .then((s) => setOwnerNumber(s.owner_whatsapp_number))
+      .catch(() => setOwnerNumber(''))
+      .finally(() => setLoadingOwnerNumber(false));
+  }
+
+  function copyOwnerNumber() {
+    if (!ownerNumber) return;
+    navigator.clipboard.writeText(ownerNumber).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  function scrollToOwnerCard() {
+    document.getElementById('list-your-apartment')?.scrollIntoView({ behavior: 'smooth' });
+  }
 
   const countFor = (region: Region, gender: 'girls' | 'boys') =>
     listings.filter((l) => l.region === region && l.gender === gender && l.status === 'available').length;
@@ -38,10 +68,18 @@ export default function HomePage() {
           <p className="text-gold-gradient mb-3 text-2xl font-extrabold sm:text-3xl">
             سكنك الطلابي في المنيا يبدأ من هنا
           </p>
-          <p className="mx-auto mb-10 max-w-xl text-base leading-relaxed text-white/75 sm:text-lg">
+          <p className="mx-auto mb-4 max-w-xl text-base leading-relaxed text-white/75 sm:text-lg">
             تصفّح شقق سكن البنات والشباب في المنيا الجديدة والمنيا،
             شاهد الصور والتفاصيل، وتواصل مع المالك مباشرة عبر واتساب بضغطة واحدة.
           </p>
+
+          <button
+            onClick={scrollToOwnerCard}
+            className="mx-auto mb-8 flex items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-xs font-medium text-white/90 backdrop-blur-sm transition hover:bg-white/15"
+          >
+            <Building2 className="h-3.5 w-3.5 text-amber-300" />
+            عندك شقة؟ اعرضها معانا (خاص بالملاك)
+          </button>
 
           <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button
@@ -159,8 +197,63 @@ export default function HomePage() {
               </div>
             ))}
           </div>
+
+          {/* ============ كارت خاص بالملاك: لعرض شقتك ============ */}
+          <div
+            id="list-your-apartment"
+            className="mt-6 scroll-mt-20 rounded-2xl border border-dashed border-primary/40 bg-primary/5 p-6 text-center sm:p-8"
+          >
+            <span className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
+              <Building2 className="h-7 w-7" />
+            </span>
+            <h3 className="mb-2 text-lg font-bold">عندك شقة؟ اعرضها معانا</h3>
+            <p className="mx-auto mb-4 max-w-md text-sm leading-relaxed text-muted-foreground">
+              خاص بالملاك — تواصل معانا عبر واتساب وابعتلنا تفاصيل شقتك عشان نضيفها للموقع ويشوفها آلاف الطلاب.
+            </p>
+            <Button onClick={openOwnerContact} className="gap-2">
+              <MessageCircle className="h-4 w-4" />
+              تواصل لعرض شقتك
+            </Button>
+          </div>
         </div>
       </section>
+
+      {/* ديالوج عرض رقم واتساب صاحب الموقع للملاك */}
+      <Dialog open={showOwnerContact} onOpenChange={setShowOwnerContact}>
+        <DialogContent className="max-w-sm" dir="rtl">
+          <DialogHeader>
+            <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/15">
+              <KeyRound className="h-7 w-7 text-primary" />
+            </div>
+            <DialogTitle className="text-center text-xl">لعرض شقتك</DialogTitle>
+            <DialogDescription className="text-center leading-relaxed">
+              تواصل معانا على الرقم ده وابعتلنا تفاصيل شقتك وصورها.
+            </DialogDescription>
+          </DialogHeader>
+
+          {loadingOwnerNumber ? (
+            <div className="flex justify-center py-4">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            </div>
+          ) : ownerNumber ? (
+            <div className="flex items-center justify-between gap-2 rounded-lg border border-border/70 bg-secondary/40 px-3 py-2.5">
+              <span dir="ltr" className="font-bold text-foreground">{ownerNumber}</span>
+              <button
+                type="button"
+                onClick={copyOwnerNumber}
+                className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-primary hover:bg-primary/10"
+              >
+                {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                {copied ? 'اتنسخ' : 'نسخ'}
+              </button>
+            </div>
+          ) : (
+            <p className="text-center text-sm text-muted-foreground">
+              التواصل غير متاح حاليًا — حاول لاحقًا.
+            </p>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

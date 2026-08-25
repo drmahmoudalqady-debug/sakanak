@@ -24,6 +24,12 @@ export interface Student {
   created_at: number;
 }
 
+// إعدادات عامة للموقع يتحكم فيها الأدمن من لوحة التحكم
+export interface SiteSettings {
+  forgot_password_contact: string; // رقم/معلومات التواصل لاسترجاع كلمة السر
+  owner_whatsapp_number: string;   // رقم واتساب استقبال طلبات عرض الشقق من الملاك
+}
+
 export const REGION_LABELS: Record<Region, string> = {
   'new-minya': 'المنيا الجديدة',
   'minya': 'المنيا',

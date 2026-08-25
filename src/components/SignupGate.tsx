@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { GraduationCap, Loader2, MessageCircle, KeyRound } from 'lucide-react';
-import { signupStudent, loginStudent, sendPasswordReset } from '@/lib/data-service';
+import { GraduationCap, Loader2, MessageCircle, KeyRound, Copy, Check } from 'lucide-react';
+import { signupStudent, loginStudent, getSiteSettings } from '@/lib/data-service';
 import { isSupabaseConfigured } from '@/lib/supabase';
 
 interface Props {
@@ -43,10 +43,29 @@ export default function SignupGate({ open, onClose, onSuccess, context = 'whatsa
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
 
-  // حالة "نسيت كلمة السر"
+  // حالة "نسيت كلمة السر" — عرض رقم التواصل بدل إرسال إيميل
   const [forgotMode, setForgotMode] = useState(false);
-  const [forgotEmail, setForgotEmail] = useState('');
-  const [forgotSent, setForgotSent] = useState(false);
+  const [contactInfo, setContactInfo] = useState('');
+  const [loadingContact, setLoadingContact] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  function openForgotMode() {
+    setForgotMode(true);
+    setError('');
+    setLoadingContact(true);
+    getSiteSettings()
+      .then((s) => setContactInfo(s.forgot_password_contact))
+      .catch(() => setContactInfo(''))
+      .finally(() => setLoadingContact(false));
+  }
+
+  function copyContact() {
+    if (!contactInfo) return;
+    navigator.clipboard.writeText(contactInfo).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
@@ -90,24 +109,6 @@ export default function SignupGate({ open, onClose, onSuccess, context = 'whatsa
     }
   }
 
-  async function handleForgotPassword(e: React.FormEvent) {
-    e.preventDefault();
-    setError('');
-    if (!forgotEmail.trim()) {
-      setError('من فضلك أدخل بريدك الإلكتروني');
-      return;
-    }
-    setLoading(true);
-    try {
-      await sendPasswordReset(forgotEmail.trim());
-      setForgotSent(true);
-    } catch (err) {
-      setError(friendlyError(err));
-    } finally {
-      setLoading(false);
-    }
-  }
-
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-md" dir="rtl">
@@ -127,7 +128,7 @@ export default function SignupGate({ open, onClose, onSuccess, context = 'whatsa
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={tab} onValueChange={(v) => { setTab(v as 'signup' | 'login'); setError(''); setForgotMode(false); setForgotSent(false); }}>
+        <Tabs value={tab} onValueChange={(v) => { setTab(v as 'signup' | 'login'); setError(''); setForgotMode(false); }}>
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="signup">تسجيل جديد</TabsTrigger>
             <TabsTrigger value="login">مسجل بالفعل</TabsTrigger>
@@ -181,43 +182,45 @@ export default function SignupGate({ open, onClose, onSuccess, context = 'whatsa
           {/* نموذج دخول لطالب مسجل */}
           <TabsContent value="login">
             {forgotMode ? (
-              forgotSent ? (
-                <div className="space-y-3 pt-2 text-center">
-                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                    <KeyRound className="h-6 w-6 text-primary" />
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    لو الإيميل ده مسجل عندنا، هيوصلك رابط لإعادة تعيين كلمة السر. افتحه من نفس الجهاز لو أمكن.
-                  </p>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => { setForgotMode(false); setForgotSent(false); setForgotEmail(''); setError(''); }}
-                  >
-                    الرجوع لتسجيل الدخول
-                  </Button>
+              <div className="space-y-3 pt-2">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                  <KeyRound className="h-6 w-6 text-primary" />
                 </div>
-              ) : (
-                <form onSubmit={handleForgotPassword} className="space-y-3 pt-2">
-                  <p className="text-sm text-muted-foreground">
-                    اكتب بريدك الإلكتروني وهنبعتلك رابط لإعادة تعيين كلمة السر.
+                {loadingContact ? (
+                  <div className="flex justify-center py-4">
+                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  </div>
+                ) : contactInfo ? (
+                  <>
+                    <p className="text-center text-sm text-muted-foreground">
+                      تواصل معانا على الرقم ده عشان نساعدك تستعيد حسابك:
+                    </p>
+                    <div className="flex items-center justify-between gap-2 rounded-lg border border-border/70 bg-secondary/40 px-3 py-2.5">
+                      <span dir="ltr" className="font-bold text-foreground">{contactInfo}</span>
+                      <button
+                        type="button"
+                        onClick={copyContact}
+                        className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-primary hover:bg-primary/10"
+                      >
+                        {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                        {copied ? 'اتنسخ' : 'نسخ'}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-center text-sm text-muted-foreground">
+                    التواصل غير متاح حاليًا — حاول لاحقًا.
                   </p>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="forgot_email">البريد الإلكتروني</Label>
-                    <Input id="forgot_email" type="email" dir="ltr" className="text-end" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} placeholder="you@mail.com" />
-                  </div>
-                  {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
-                  <div className="flex gap-2">
-                    <Button type="button" variant="outline" className="flex-1" onClick={() => { setForgotMode(false); setError(''); }}>
-                      رجوع
-                    </Button>
-                    <Button type="submit" disabled={loading} className="flex-1 bg-[#25D366] text-white hover:bg-[#1eb85a]">
-                      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'إرسال الرابط'}
-                    </Button>
-                  </div>
-                </form>
-              )
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setForgotMode(false)}
+                >
+                  الرجوع لتسجيل الدخول
+                </Button>
+              </div>
             ) : (
               <form onSubmit={handleLogin} className="space-y-3 pt-2">
                 <div className="space-y-1.5">
@@ -230,7 +233,7 @@ export default function SignupGate({ open, onClose, onSuccess, context = 'whatsa
                 </div>
                 <button
                   type="button"
-                  onClick={() => { setForgotMode(true); setForgotEmail(loginEmail); setError(''); }}
+                  onClick={openForgotMode}
                   className="block text-start text-xs text-primary hover:underline"
                 >
                   نسيت كلمة السر؟

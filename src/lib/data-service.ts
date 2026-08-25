@@ -5,7 +5,7 @@
 // ============================================================
 import { supabase, isSupabaseConfigured, SUPABASE_BUCKET, ADMIN_EMAIL } from './supabase';
 import { DEMO_LISTINGS } from './demo-data';
-import type { Listing, Student } from './types';
+import type { Listing, Student, SiteSettings } from './types';
 import { compressImage } from './image-utils';
 import type { User } from '@supabase/supabase-js';
 
@@ -14,6 +14,7 @@ const LS_LISTINGS = 'sakanak_demo_listings';
 const LS_STUDENTS = 'sakanak_demo_students';
 const LS_STUDENT_SESSION = 'sakanak_demo_student_session';
 const LS_ADMIN_SESSION = 'sakanak_demo_admin_session';
+const LS_SITE_SETTINGS = 'sakanak_demo_site_settings';
 
 export const DEMO_ADMIN_PASSWORD = 'admin123'; // كلمة سر لوحة التحكم في الوضع التجريبي فقط
 
@@ -57,8 +58,12 @@ export function subscribeListings(callback: (listings: Listing[]) => void): () =
     };
   }
 
+  // مرجع محلي ثابت: يحل مشكلة فقدان TypeScript لتتبع أن supabase غير null
+  // داخل الدوال المتداخلة (closures) أدناه
+  const client = supabase;
+
   // تحميل أولي
-  supabase
+  client
     .from('listings')
     .select('*')
     .order('created_at', { ascending: false })
@@ -67,10 +72,10 @@ export function subscribeListings(callback: (listings: Listing[]) => void): () =
     });
 
   // اشتراك لحظي في أي تغيير
-  const channel = supabase
+  const channel = client
     .channel('listings-changes')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'listings' }, () => {
-      supabase
+      client
         .from('listings')
         .select('*')
         .order('created_at', { ascending: false })
@@ -81,7 +86,7 @@ export function subscribeListings(callback: (listings: Listing[]) => void): () =
     .subscribe();
 
   return () => {
-    supabase.removeChannel(channel);
+    client.removeChannel(channel);
   };
 }
 
@@ -351,4 +356,47 @@ export async function deleteStudent(id: string): Promise<void> {
   // في قائمة الطلاب ويوقف قدرته على الدخول ببيانات صحيحة للوحة التحكم مستقبلاً.
   const { error } = await supabase.from('students').delete().eq('id', id);
   if (error) throw new Error(`فشل حذف الطالب: ${error.message}`);
+}
+
+// ---------- إعدادات الموقع العامة (رقم واتساب استرجاع الباسورد + رقم استقبال عروض الشقق) ----------
+const DEFAULT_SITE_SETTINGS: SiteSettings = {
+  forgot_password_contact: '',
+  owner_whatsapp_number: '',
+};
+
+function demoReadSiteSettings(): SiteSettings {
+  try {
+    const raw = localStorage.getItem(LS_SITE_SETTINGS);
+    if (raw) return { ...DEFAULT_SITE_SETTINGS, ...JSON.parse(raw) };
+  } catch { /* تجاهل */ }
+  return DEFAULT_SITE_SETTINGS;
+}
+
+// جلب إعدادات الموقع (متاحة للجميع — طالب أو زائر أو أدمن)
+export async function getSiteSettings(): Promise<SiteSettings> {
+  if (!isSupabaseConfigured || !supabase) {
+    return demoReadSiteSettings();
+  }
+  const { data, error } = await supabase
+    .from('site_settings')
+    .select('forgot_password_contact, owner_whatsapp_number')
+    .eq('id', 1)
+    .single();
+  if (error) throw new Error(`فشل تحميل إعدادات الموقع: ${error.message}`);
+  return {
+    forgot_password_contact: data?.forgot_password_contact ?? '',
+    owner_whatsapp_number: data?.owner_whatsapp_number ?? '',
+  };
+}
+
+// تحديث إعدادات الموقع (للأدمن فقط)
+export async function updateSiteSettings(settings: Partial<SiteSettings>): Promise<void> {
+  if (!isSupabaseConfigured || !supabase) {
+    const current = demoReadSiteSettings();
+    localStorage.setItem(LS_SITE_SETTINGS, JSON.stringify({ ...current, ...settings }));
+    window.dispatchEvent(new Event('sakanak-demo-update'));
+    return;
+  }
+  const { error } = await supabase.from('site_settings').update(settings).eq('id', 1);
+  if (error) throw new Error(`فشل حفظ الإعدادات: ${error.message}`);
 }

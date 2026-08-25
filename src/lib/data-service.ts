@@ -205,8 +205,12 @@ export async function sendPasswordReset(email: string): Promise<void> {
   if (!isSupabaseConfigured || !supabase) {
     throw new Error('هذه الميزة غير متاحة في الوضع التجريبي');
   }
+  // المشروع يستخدم HashRouter (لتوافق أوسع مع الاستضافة الثابتة)، لذلك لازم نضيف
+  // "#/" قبل المسار، مع الإبقاء على base path الحالي (مهم لأن الموقع منشور
+  // تحت مسار فرعي مثل /sakanak/ على GitHub Pages وليس على الجذر مباشرة)
+  const basePath = window.location.pathname.replace(/\/[^/]*$/, '/');
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/reset-password`,
+    redirectTo: `${window.location.origin}${basePath}#/reset-password`,
   });
   if (error) throw new Error(`تعذّر إرسال رابط إعادة التعيين: ${error.message}`);
 }

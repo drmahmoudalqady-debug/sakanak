@@ -9,6 +9,7 @@ import { REGION_LABELS, GENDER_LABELS, STATUS_LABELS } from '@/lib/types';
 import { openWhatsApp } from '@/lib/whatsapp';
 import { useApp } from '@/context/AppContext';
 import SignupGate from './SignupGate';
+import PolicyGate, { hasAgreedToPolicy } from './PolicyGate';
 
 interface Props {
   listing: Listing | null;
@@ -19,14 +20,23 @@ export default function ListingDetail({ listing, onClose }: Props) {
   const { student } = useApp();
   const [imgIndex, setImgIndex] = useState(0);
   const [gateOpen, setGateOpen] = useState(false);
+  const [policyOpen, setPolicyOpen] = useState(false);
 
-  useEffect(() => { setImgIndex(0); setGateOpen(false); }, [listing?.id]);
+  useEffect(() => { setImgIndex(0); setGateOpen(false); setPolicyOpen(false); }, [listing?.id]);
 
   if (!listing) return null;
   const images = listing.images.length ? listing.images : [''];
 
-  // زرار واتساب: لو الطالب مسجل يفتح مباشرة، لو لأ تظهر بوابة التسجيل
+  // زرار واتساب: أولوية القواعد (مرة واحدة للأبد) ثم التسجيل ثم فتح واتساب
   function handleWhatsApp() {
+    if (!hasAgreedToPolicy()) {
+      setPolicyOpen(true);
+      return;
+    }
+    proceedAfterPolicy();
+  }
+
+  function proceedAfterPolicy() {
     if (student) {
       openWhatsApp(listing!);
     } else {
@@ -111,20 +121,33 @@ export default function ListingDetail({ listing, onClose }: Props) {
             {/* زرار واتساب — أهم عنصر وظيفي */}
             <Button
               onClick={handleWhatsApp}
+              disabled={listing.status === 'reserved'}
               size="lg"
-              className="w-full gap-2 bg-[#25D366] text-base font-bold text-white shadow-lg shadow-[#25D366]/30 hover:bg-[#1eb85a]"
+              className="w-full gap-2 bg-[#25D366] text-base font-bold text-white shadow-lg shadow-[#25D366]/30 hover:bg-[#1eb85a] disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
             >
               <MessageCircle className="h-5 w-5" />
-              تواصل عبر واتساب
+              {listing.status === 'reserved' ? 'الشقة محجوزة حاليًا' : 'تواصل عبر واتساب'}
             </Button>
             <p className="text-center text-xs text-muted-foreground">
-              {student
-                ? 'سيتم فتح محادثة واتساب مع المالك برسالة جاهزة ببيانات الشقة'
-                : 'سيُطلب منك التسجيل مرة واحدة فقط قبل أول تواصل'}
+              {listing.status === 'reserved'
+                ? 'هذه الشقة لم تعد متاحة — تصفّح شققًا أخرى مشابهة'
+                : student
+                  ? 'سيتم فتح محادثة واتساب مع المالك برسالة جاهزة ببيانات الشقة'
+                  : 'سيُطلب منك التسجيل مرة واحدة فقط قبل أول تواصل'}
             </p>
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* بوابة القواعد — تظهر مرة واحدة فقط قبل أي تسجيل أو تواصل */}
+      <PolicyGate
+        open={policyOpen}
+        onClose={() => setPolicyOpen(false)}
+        onAgree={() => {
+          setPolicyOpen(false);
+          proceedAfterPolicy();
+        }}
+      />
 
       {/* بوابة التسجيل — بعد النجاح يفتح واتساب مباشرة */}
       <SignupGate

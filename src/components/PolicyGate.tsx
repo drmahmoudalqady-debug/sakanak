@@ -5,7 +5,6 @@ import { useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { ShieldCheck, Clock } from 'lucide-react';
 
 const LS_KEY = 'sakanak_policy_agreed_v1';
@@ -66,7 +65,7 @@ export default function PolicyGate({ open, onAgree, onClose }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="flex max-h-[88vh] max-w-lg flex-col gap-0 p-0" dir="rtl">
+      <DialogContent className="flex max-h-[88vh] max-w-lg flex-col gap-0 overflow-hidden p-0" dir="rtl">
         <DialogHeader className="border-b border-border/70 p-5 pb-4">
           <DialogTitle className="flex items-center gap-2 text-lg">
             <ShieldCheck className="h-5 w-5 text-primary" />
@@ -77,7 +76,11 @@ export default function PolicyGate({ open, onAgree, onClose }: Props) {
           </p>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 px-5 py-4" viewportRef={viewportRef} onScrollCapture={handleScroll}>
+        <div
+          ref={viewportRef}
+          onScroll={handleScroll}
+          className="min-h-0 flex-1 overflow-y-auto px-5 py-4"
+        >
           <div className="space-y-5 pb-2 text-sm leading-relaxed text-foreground/90">
             <section className="space-y-2">
               <h3 className="font-bold text-primary">1. سياسة حجز الشقة والدفع (خاص بالطالب)</h3>
@@ -203,7 +206,7 @@ export default function PolicyGate({ open, onAgree, onClose }: Props) {
               منصة سكنك — المنيا، جمهورية مصر العربية | هذه الوثيقة سارية اعتبارًا من تاريخ اعتمادها من إدارة المنصة
             </p>
           </div>
-        </ScrollArea>
+        </div>
 
         <div className="space-y-3 border-t border-border/70 p-5 pt-4">
           {!reachedBottom && (

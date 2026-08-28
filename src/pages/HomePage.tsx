@@ -9,7 +9,6 @@ export default function PolicyPage() {
     <div className="min-h-screen bg-background" dir="rtl">
       <div className="mx-auto max-w-3xl px-4 py-10 sm:py-12">
 
-        {/* Header */}
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
             <ShieldCheck className="h-8 w-8" />
@@ -27,19 +26,16 @@ export default function PolicyPage() {
 
         <div className="space-y-6">
 
-          {/* بانر مهم */}
           <div className="rounded-xl border border-emerald-300/60 bg-emerald-50 p-4 text-center text-emerald-900">
             <p className="font-bold">
               🎉 إعلان مجاني بالكامل للمالك — 0% عمولة
             </p>
-
             <p className="mt-1 text-sm">
               الطالب يدفع <b>25%</b> مقسمة على دفعتين: <b>12.5%</b> عند تأكيد
               الحجز + <b>12.5%</b> أثناء المعاينة.
             </p>
           </div>
 
-          {/* 1 */}
           <section className="space-y-3 rounded-2xl border border-border/70 bg-card p-5 sm:p-6">
             <h2 className="font-bold text-primary">
               1. سياسة حجز الشقة والدفع (خاص بالطالب)
@@ -74,12 +70,10 @@ export default function PolicyPage() {
 
             <ul className="list-inside list-disc space-y-1 ps-2">
               <li>وجود وصف خاطئ أو مضلل للشقة على المنصة.</li>
-
               <li>
                 وجود عيوب جوهرية غير مذكورة في الإعلان (مثل: أعطال السباكة،
                 انقطاع المياه، أو تلف الأثاث الأساسي).
               </li>
-
               <li>
                 تراجع المالك بعد موافقته على الطالب وفق الحالات والرسوم
                 الموضحة في القسم الرابع.
@@ -98,7 +92,6 @@ export default function PolicyPage() {
             </p>
           </section>
 
-          {/* 2 */}
           <section className="space-y-3 rounded-2xl border border-border/70 bg-card p-5 sm:p-6">
             <h2 className="font-bold text-primary">
               2. مسؤولية وصف العقار والتصوير (خاص بالمالك)
@@ -125,7 +118,6 @@ export default function PolicyPage() {
             </p>
           </section>
 
-          {/* 3 */}
           <section className="space-y-3 rounded-2xl border border-border/70 bg-card p-5 sm:p-6">
             <h2 className="font-bold text-primary">
               3. سياسة رسوم المالك وتكاليف الإعلان
@@ -151,7 +143,6 @@ export default function PolicyPage() {
             </p>
           </section>
 
-          {/* 4 */}
           <section className="space-y-3 rounded-2xl border border-border/70 bg-card p-5 sm:p-6">
             <h2 className="font-bold text-primary">
               4. سياسة المعاينة وتراجع المالك
@@ -180,7 +171,6 @@ export default function PolicyPage() {
             </p>
           </section>
 
-          {/* 5 */}
           <section className="space-y-3 rounded-2xl border border-border/70 bg-card p-5 sm:p-6">
             <h2 className="font-bold text-primary">
               5. آلية التعاقد وإخلاء المسؤولية التام
@@ -197,7 +187,6 @@ export default function PolicyPage() {
                 <b>مبلغ التأمين:</b> يعادل قيمة شهر إيجار واحد، ويُسترد عند
                 الإخلاء وفق الاتفاق بين الطرفين.
               </li>
-
               <li>
                 <b>إيجار الشهر الأول:</b> يُدفع مقدمًا للمالك مباشرة.
               </li>
@@ -217,7 +206,6 @@ export default function PolicyPage() {
             </p>
           </section>
 
-          {/* الملخص */}
           <section className="space-y-3 rounded-2xl border border-primary/20 bg-primary/5 p-5 sm:p-6">
             <h2 className="font-bold text-primary">
               ملخص سريع للأرقام والمهل الزمنية
@@ -227,67 +215,97 @@ export default function PolicyPage() {
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[600px] text-xs">
                   <tbody>
-                    {[
-                      [
-                        'نسبة رسوم المنصة (من الطالب)',
-                        '25% (12.5% تأكيد + 12.5% معاينة)',
-                      ],
-                      [
-                        'نسبة رسوم المنصة (من المالك)',
-                        '0% — إعلان مجاني',
-                      ],
-                      [
-                        'دفعة التأكيد (عند التواصل)',
-                        '12.5% — خلال 48 ساعة',
-                      ],
-                      [
-                        'دفعة المعاينة (عند الاتفاق)',
-                        '12.5% — أثناء المعاينة وقبل توقيع العقد',
-                      ],
-                      [
-                        'مهلة تقديم طلب استرجاع الطالب',
-                        'أسبوع واحد (7 أيام) من الدفع',
-                      ],
-                      [
-                        'غرامة المالك (تراجع بدون سبب إلزامي)',
-                        '7% من قيمة الإيجار الشهري — + استرداد الطالب لـ 12.5%',
-                      ],
-                      [
-                        'رسوم المالك (تراجع لسبب إلزامي)',
-                        '4% من قيمة الإيجار الشهري — + استرداد الطالب لـ 12.5%',
-                      ],
-                      [
-                        'غرامة المالك (وصف خاطئ)',
-                        '7% إلى 10% كحد أقصى (حسب الخطأ)',
-                      ],
-                      [
-                        'غرامة المالك (إلغاء بعد دفع الطالب)',
-                        '7% — + رد المبلغ المستحق للطالب',
-                      ],
-                    ].map(([label, value], i) => (
-                      <tr
-                        key={i}
-                        className={i % 2 ? 'bg-secondary/40' : ''}
-                      >
-                        <td className="p-2.5 font-medium">{label}</td>
-                        <td className="p-2.5 text-muted-foreground">
-                          {value}
-                        </td>
-                      </tr>
-                    ))}
+                    <tr>
+                      <td className="p-2.5 font-medium">
+                        نسبة رسوم المنصة (من الطالب)
+                      </td>
+                      <td className="p-2.5 text-muted-foreground">
+                        25% (12.5% تأكيد + 12.5% معاينة)
+                      </td>
+                    </tr>
+
+                    <tr className="bg-secondary/40">
+                      <td className="p-2.5 font-medium">
+                        نسبة رسوم المنصة (من المالك)
+                      </td>
+                      <td className="p-2.5 text-muted-foreground">
+                        0% — إعلان مجاني
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <td className="p-2.5 font-medium">
+                        دفعة التأكيد (عند التواصل)
+                      </td>
+                      <td className="p-2.5 text-muted-foreground">
+                        12.5% — خلال 48 ساعة
+                      </td>
+                    </tr>
+
+                    <tr className="bg-secondary/40">
+                      <td className="p-2.5 font-medium">
+                        دفعة المعاينة (عند الاتفاق)
+                      </td>
+                      <td className="p-2.5 text-muted-foreground">
+                        12.5% — أثناء المعاينة وقبل توقيع العقد
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <td className="p-2.5 font-medium">
+                        مهلة تقديم طلب استرجاع الطالب
+                      </td>
+                      <td className="p-2.5 text-muted-foreground">
+                        أسبوع واحد (7 أيام) من الدفع
+                      </td>
+                    </tr>
+
+                    <tr className="bg-secondary/40">
+                      <td className="p-2.5 font-medium">
+                        غرامة المالك (تراجع بدون سبب إلزامي)
+                      </td>
+                      <td className="p-2.5 text-muted-foreground">
+                        7% من قيمة الإيجار الشهري — + استرداد الطالب لـ 12.5%
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <td className="p-2.5 font-medium">
+                        رسوم المالك (تراجع لسبب إلزامي)
+                      </td>
+                      <td className="p-2.5 text-muted-foreground">
+                        4% من قيمة الإيجار الشهري — + استرداد الطالب لـ 12.5%
+                      </td>
+                    </tr>
+
+                    <tr className="bg-secondary/40">
+                      <td className="p-2.5 font-medium">
+                        غرامة المالك (وصف خاطئ)
+                      </td>
+                      <td className="p-2.5 text-muted-foreground">
+                        7% إلى 10% كحد أقصى (حسب الخطأ)
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <td className="p-2.5 font-medium">
+                        غرامة المالك (إلغاء بعد دفع الطالب)
+                      </td>
+                      <td className="p-2.5 text-muted-foreground">
+                        7% — + رد المبلغ المستحق للطالب
+                      </td>
+                    </tr>
                   </tbody>
                 </table>
               </div>
             </div>
           </section>
 
-          {/* Footer */}
           <p className="pt-1 text-center text-[11px] text-muted-foreground">
             منصة سكنك — المنيا، جمهورية مصر العربية | هذه الوثيقة سارية
             اعتبارًا من تاريخ اعتمادها من إدارة المنصة
           </p>
 
-          {/* العودة */}
           <div className="pt-2 text-center">
             <Button
               onClick={() => navigate('/')}

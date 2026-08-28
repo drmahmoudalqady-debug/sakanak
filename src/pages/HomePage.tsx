@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router';
 import { useApp } from '@/context/AppContext';
 import Scene3D from '@/components/Scene3D';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import {
   Building2, Landmark, MessageCircle, Images, ShieldCheck,
-  ArrowDown, Users, GraduationCap, MapPin, KeyRound,
+  ArrowDown, Users, GraduationCap, MapPin, KeyRound, Star, Percent,
 } from 'lucide-react';
 import type { Region } from '@/lib/types';
 import { REGION_LABELS } from '@/lib/types';
@@ -24,12 +25,11 @@ export default function HomePage() {
     setLoadingOwnerNumber(true);
     try {
       const s = await getSiteSettings();
-      const number = (s.owner_whatsapp_number || '').replace(/[^\d]/g, ''); // إزالة أي رموز غير أرقام (+ مسافات إلخ)
+      const number = (s.owner_whatsapp_number || '').replace(/[^\d]/g, '');
       if (number) {
         const message = encodeURIComponent('السلام عليكم، عندي شقة وعايز أعرضها على منصة سكنك.');
         window.open(`https://wa.me/${number}?text=${message}`, '_blank');
       } else {
-        // لا يوجد رقم مُعدّ حاليًا من لوحة التحكم — نعرض نافذة توضيحية بدل فتح رابط فاسد
         setShowOwnerContact(true);
       }
     } catch {
@@ -73,12 +73,20 @@ export default function HomePage() {
             شاهد الصور والتفاصيل، وتواصل مع المالك مباشرة عبر واتساب بضغطة واحدة.
           </p>
 
+          {/* زرار المالك المحدّث مع بادج 0% */}
           <button
             onClick={scrollToOwnerCard}
-            className="mx-auto mb-8 flex items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-xs font-medium text-white/90 backdrop-blur-sm transition hover:bg-white/15"
+            className="mx-auto mb-8 flex flex-col items-center gap-2 rounded-2xl border border-white/25 bg-white/10 px-5 py-3 text-white/90 backdrop-blur-sm transition hover:bg-white/15"
           >
-            <Building2 className="h-3.5 w-3.5 text-amber-300" />
-            عندك شقة؟ اعرضها معانا (خاص بالملاك)
+            <div className="flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-amber-300" />
+              <span className="text-sm font-bold">عندك شقة؟ اعرضها معانا</span>
+              <span className="text-[10px]">(خاص بالملاك)</span>
+            </div>
+            <Badge className="bg-emerald-500 text-white hover:bg-emerald-600 gap-1 px-3 py-1 text-xs font-bold">
+              <Percent className="h-3 w-3" />
+              بدون رسوم — 0% عمولة من المالك
+            </Badge>
           </button>
 
           <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -201,19 +209,46 @@ export default function HomePage() {
           {/* ============ كارت خاص بالملاك: لعرض شقتك ============ */}
           <div
             id="list-your-apartment"
-            className="mt-6 scroll-mt-20 rounded-2xl border border-dashed border-primary/40 bg-primary/5 p-6 text-center sm:p-8"
+            className="mt-8 scroll-mt-20 overflow-hidden rounded-3xl border-2 border-emerald-400/50 bg-gradient-to-br from-emerald-50 to-white p-6 text-center shadow-lg shadow-emerald-900/5 sm:p-10"
           >
-            <span className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
-              <Building2 className="h-7 w-7" />
-            </span>
-            <h3 className="mb-2 text-lg font-bold">عندك شقة؟ اعرضها معانا</h3>
-            <p className="mx-auto mb-4 max-w-md text-sm leading-relaxed text-muted-foreground">
-              خاص بالملاك — تواصل معانا عبر واتساب وابعتلنا تفاصيل شقتك عشان نضيفها للموقع ويشوفها آلاف الطلاب.
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-lg">
+              <Star className="h-8 w-8" />
+            </div>
+            
+            <Badge className="mb-3 bg-emerald-600 text-white hover:bg-emerald-700 gap-1 px-4 py-1.5 text-sm font-bold">
+              <Percent className="h-3.5 w-3.5" />
+              إعلان مجاني — 0% عمولة من المالك
+            </Badge>
+            
+            <h3 className="mb-2 text-xl font-extrabold text-foreground">عندك شقة؟ اعرضها معانا</h3>
+            <p className="mx-auto mb-5 max-w-lg text-sm leading-relaxed text-muted-foreground">
+              خاص بالملاك — تواصل معانا عبر واتساب وابعتلنا تفاصيل شقتك عشان نضيفها للموقع ويشوفها آلاف الطلاب. 
+              <span className="block mt-1 font-bold text-emerald-700">الإعلان مجاني بالكامل — لا توجد أي رسوم على المالك.</span>
             </p>
-            <Button onClick={openOwnerContact} disabled={loadingOwnerNumber} className="gap-2">
-              <MessageCircle className="h-4 w-4" />
-              {loadingOwnerNumber ? 'جارٍ التحويل...' : 'تواصل لعرض شقتك'}
+            
+            <Button 
+              onClick={openOwnerContact} 
+              disabled={loadingOwnerNumber} 
+              className="gap-2 bg-emerald-600 text-white hover:bg-emerald-700 px-8 py-5 text-base font-bold shadow-lg shadow-emerald-600/20"
+            >
+              <MessageCircle className="h-5 w-5" />
+              {loadingOwnerNumber ? 'جارٍ التحويل...' : 'تواصل لعرض شقتك مجاناً'}
             </Button>
+            
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-3 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-emerald-800">
+                <Percent className="h-3 w-3" />
+                0% عمولة
+              </span>
+              <span className="flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-emerald-800">
+                <Images className="h-3 w-3" />
+                تصوير احترافي مجاني
+              </span>
+              <span className="flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-emerald-800">
+                <Users className="h-3 w-3" />
+                وصول لآلاف الطلاب
+              </span>
+            </div>
           </div>
         </div>
       </section>

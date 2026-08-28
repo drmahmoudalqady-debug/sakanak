@@ -7,6 +7,7 @@ import ListingsPage from '@/pages/ListingsPage';
 import AdminLoginPage from '@/pages/AdminLoginPage';
 import AdminDashboardPage from '@/pages/AdminDashboardPage';
 import ResetPasswordPage from '@/pages/ResetPasswordPage';
+import PolicyPage from '@/pages/PolicyPage'; // ← جديد
 import { Toaster } from '@/components/ui/sonner';
 
 export default function App() {
@@ -18,6 +19,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/region/:region" element={<ListingsPage />} />
+            <Route path="/policy" element={<PolicyPage />} /> {/* ← جديد */}
             <Route path="/admin" element={<AdminLoginPage />} />
             <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />

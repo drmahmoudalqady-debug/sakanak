@@ -1,272 +1,375 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router';
-import { useApp } from '@/context/AppContext';
-import Scene3D from '@/components/Scene3D';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+```tsx
 import {
-  Building2, Landmark, MessageCircle, Images, ShieldCheck,
-  ArrowDown, Users, GraduationCap, MapPin, KeyRound, Star, Percent,
+  ShieldCheck,
+  Percent,
+  Clock,
+  AlertTriangle,
+  CheckCircle,
+  FileText,
+  ArrowLeft,
 } from 'lucide-react';
-import type { Region } from '@/lib/types';
-import { REGION_LABELS } from '@/lib/types';
-import { getSiteSettings } from '@/lib/data-service';
+import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router';
 
-export default function HomePage() {
-  const { listings } = useApp();
+export default function PolicyPage() {
   const navigate = useNavigate();
 
-  // ديالوج احتياطي: يظهر فقط لو رقم واتساب المالك غير مُعدّ من لوحة التحكم
-  const [showOwnerContact, setShowOwnerContact] = useState(false);
-  const [loadingOwnerNumber, setLoadingOwnerNumber] = useState(false);
-
-  async function openOwnerContact() {
-    setLoadingOwnerNumber(true);
-    try {
-      const s = await getSiteSettings();
-      const number = (s.owner_whatsapp_number || '').replace(/[^\d]/g, '');
-      if (number) {
-        const message = encodeURIComponent('السلام عليكم، عندي شقة وعايز أعرضها على منصة سكنك.');
-        window.open(`https://wa.me/${number}?text=${message}`, '_blank');
-      } else {
-        setShowOwnerContact(true);
-      }
-    } catch {
-      setShowOwnerContact(true);
-    } finally {
-      setLoadingOwnerNumber(false);
-    }
-  }
-
-  function scrollToOwnerCard() {
-    document.getElementById('list-your-apartment')?.scrollIntoView({ behavior: 'smooth' });
-  }
-
-  const countFor = (region: Region, gender: 'girls' | 'boys') =>
-    listings.filter((l) => l.region === region && l.gender === gender && l.status === 'available').length;
-
-  const regions: { key: Region; icon: typeof Building2; tagline: string }[] = [
-    { key: 'new-minya', icon: Building2, tagline: 'مدينة جامعية حديثة بجوار الحرم الجامعي الجديد' },
-    { key: 'minya', icon: Landmark, tagline: 'قلب المدينة على كورنيش النيل وبجوار الكليات' },
-  ];
-
   return (
-    <div>
-      {/* ============ قسم البطل مع خلفية 3D ============ */}
-      <section className="relative flex min-h-[92vh] items-center justify-center overflow-hidden">
-        <Scene3D />
-        <div className="relative z-10 mx-auto max-w-4xl px-4 py-24 text-center">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-sm text-white/90 backdrop-blur-sm">
-            <MapPin className="h-4 w-4 text-amber-300" />
-            المنيا — عروس الصعيد
+    <div className="min-h-screen bg-background" dir="rtl">
+      <div className="mx-auto max-w-3xl px-4 py-10 sm:py-12">
+
+        {/* Header */}
+        <div className="mb-8 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
+            <ShieldCheck className="h-8 w-8" />
           </div>
 
-          <h1 className="mb-4 text-6xl font-black tracking-tight text-white sm:text-7xl md:text-8xl">
-            سَكَنَك
+          <h1 className="mb-2 text-2xl font-extrabold sm:text-3xl">
+            سياسة العمل، الحجز، والاسترجاع المالي
           </h1>
-          <p className="text-gold-gradient mb-3 text-2xl font-extrabold sm:text-3xl">
-            سكنك الطلابي في المنيا يبدأ من هنا
+
+          <p className="text-sm text-muted-foreground">
+            قراءة هذه الشروط والموافقة عليها إلزامية قبل أول تواصل مع مالك أي
+            شقة عبر المنصة.
           </p>
-          <p className="mx-auto mb-4 max-w-xl text-base leading-relaxed text-white/75 sm:text-lg">
-            تصفّح شقق سكن البنات والشباب في المنيا الجديدة والمنيا،
-            شاهد الصور والتفاصيل، وتواصل مع المالك مباشرة عبر واتساب بضغطة واحدة.
-          </p>
-
-          {/* زرار المالك المحدّث مع بادج 0% */}
-          <button
-            onClick={scrollToOwnerCard}
-            className="mx-auto mb-8 flex flex-col items-center gap-2 rounded-2xl border border-white/25 bg-white/10 px-5 py-3 text-white/90 backdrop-blur-sm transition hover:bg-white/15"
-          >
-            <div className="flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-amber-300" />
-              <span className="text-sm font-bold">عندك شقة؟ اعرضها معانا</span>
-              <span className="text-[10px]">(خاص بالملاك)</span>
-            </div>
-            <Badge className="bg-emerald-500 text-white hover:bg-emerald-600 gap-1 px-3 py-1 text-xs font-bold">
-              <Percent className="h-3 w-3" />
-              بدون رسوم — 0% عمولة من المالك
-            </Badge>
-          </button>
-
-          <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Button
-              size="lg"
-              className="w-full gap-2 bg-accent px-8 text-base font-bold text-accent-foreground shadow-xl shadow-amber-900/30 hover:bg-accent/90 sm:w-auto"
-              onClick={() => document.getElementById('regions')?.scrollIntoView({ behavior: 'smooth' })}
-            >
-              <Building2 className="h-5 w-5" />
-              تصفح الشقق المتاحة
-            </Button>
-            <div className="flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-5 py-3 text-sm text-white/85 backdrop-blur-sm">
-              <span className="text-2xl font-black text-amber-300">
-                {listings.filter((l) => l.status === 'available').length}
-              </span>
-              شقة متاحة الآن
-            </div>
-          </div>
-
-          <button
-            onClick={() => document.getElementById('regions')?.scrollIntoView({ behavior: 'smooth' })}
-            className="mx-auto mt-14 flex flex-col items-center gap-1 text-white/50 transition hover:text-white/80"
-            aria-label="انزل للأسفل"
-          >
-            <span className="text-xs">اختر منطقتك</span>
-            <ArrowDown className="h-5 w-5 animate-bounce" />
-          </button>
-        </div>
-      </section>
-
-      {/* ============ اختيار المنطقة ============ */}
-      <section id="regions" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-16">
-        <div className="mb-10 text-center">
-          <h2 className="mb-2 text-3xl font-extrabold text-foreground">اختار منطقتك</h2>
-          <p className="text-muted-foreground">منطقتان رئيسيتان، وفي كل منطقة سكن بنات وسكن شباب</p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          {regions.map(({ key, icon: Icon, tagline }) => (
-            <div key={key} className="card-glow overflow-hidden rounded-3xl border border-border/70 bg-card">
-              <div className="relative bg-primary p-6 text-primary-foreground">
-                <div className="absolute -end-6 -top-6 h-28 w-28 rounded-full bg-white/10" />
-                <div className="absolute -bottom-8 -start-4 h-24 w-24 rounded-full bg-white/5" />
-                <div className="relative flex items-center gap-4">
-                  <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15">
-                    <Icon className="h-7 w-7" />
-                  </span>
-                  <div>
-                    <h3 className="text-2xl font-extrabold">{REGION_LABELS[key]}</h3>
-                    <p className="mt-1 text-sm text-primary-foreground/75">{tagline}</p>
-                  </div>
-                </div>
-              </div>
+        <div className="space-y-6">
 
-              <div className="grid grid-cols-2 gap-3 p-5">
-                <button
-                  onClick={() => navigate(`/region/${key}?g=girls`)}
-                  className="group rounded-2xl border border-pink-200 bg-pink-50 p-5 text-start transition hover:border-pink-400 hover:shadow-md"
-                >
-                  <Users className="mb-2 h-6 w-6 text-pink-500" />
-                  <div className="font-bold text-foreground group-hover:text-pink-600">سكن بنات</div>
-                  <div className="mt-1 text-sm text-muted-foreground">
-                    {countFor(key, 'girls')} شقة متاحة
-                  </div>
-                </button>
-                <button
-                  onClick={() => navigate(`/region/${key}?g=boys`)}
-                  className="group rounded-2xl border border-sky-200 bg-sky-50 p-5 text-start transition hover:border-sky-400 hover:shadow-md"
-                >
-                  <GraduationCap className="mb-2 h-6 w-6 text-sky-600" />
-                  <div className="font-bold text-foreground group-hover:text-sky-700">سكن شباب</div>
-                  <div className="mt-1 text-sm text-muted-foreground">
-                    {countFor(key, 'boys')} شقة متاحة
-                  </div>
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ============ لماذا سكنك ============ */}
-      <section className="border-y border-border/60 bg-secondary/50 py-16">
-        <div className="mx-auto max-w-6xl px-4">
-          <div className="mb-10 text-center">
-            <h2 className="mb-2 text-3xl font-extrabold text-foreground">لماذا سكنك؟</h2>
-            <p className="text-muted-foreground">صممناه ليكون أسرع وأأمن طريق لسكنك الجامعي</p>
-          </div>
-          <div className="grid gap-6 sm:grid-cols-3">
-            {[
-              {
-                icon: MessageCircle,
-                title: 'تواصل مباشر',
-                desc: 'زرار واتساب واحد يفتح محادثة مع المالك برسالة جاهزة ببيانات الشقة — بدون وسطاء.',
-                color: 'text-emerald-600 bg-emerald-100',
-              },
-              {
-                icon: Images,
-                title: 'صور وتفاصيل حقيقية',
-                desc: 'كل شقة بصورها ووصفها الكامل: عدد الغرف، الدور، القرب من الكلية، والسعر.',
-                color: 'text-sky-600 bg-sky-100',
-              },
-              {
-                icon: ShieldCheck,
-                title: 'بياناتك محمية',
-                desc: 'التسجيل مطلوب فقط عند التواصل، وبياناتك لا يراها إلا إدارة الموقع لغرض السكن فقط.',
-                color: 'text-amber-600 bg-amber-100',
-              },
-            ].map(({ icon: Icon, title, desc, color }) => (
-              <div key={title} className="card-glow rounded-2xl border border-border/70 bg-card p-6 text-center">
-                <span className={`mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl ${color}`}>
-                  <Icon className="h-7 w-7" />
-                </span>
-                <h3 className="mb-2 text-lg font-bold">{title}</h3>
-                <p className="text-sm leading-relaxed text-muted-foreground">{desc}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* ============ كارت خاص بالملاك: لعرض شقتك ============ */}
-          <div
-            id="list-your-apartment"
-            className="mt-8 scroll-mt-20 overflow-hidden rounded-3xl border-2 border-emerald-400/50 bg-gradient-to-br from-emerald-50 to-white p-6 text-center shadow-lg shadow-emerald-900/5 sm:p-10"
-          >
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-lg">
-              <Star className="h-8 w-8" />
-            </div>
-            
-            <Badge className="mb-3 bg-emerald-600 text-white hover:bg-emerald-700 gap-1 px-4 py-1.5 text-sm font-bold">
-              <Percent className="h-3.5 w-3.5" />
-              إعلان مجاني — 0% عمولة من المالك
-            </Badge>
-            
-            <h3 className="mb-2 text-xl font-extrabold text-foreground">عندك شقة؟ اعرضها معانا</h3>
-            <p className="mx-auto mb-5 max-w-lg text-sm leading-relaxed text-muted-foreground">
-              خاص بالملاك — تواصل معانا عبر واتساب وابعتلنا تفاصيل شقتك عشان نضيفها للموقع ويشوفها آلاف الطلاب. 
-              <span className="block mt-1 font-bold text-emerald-700">الإعلان مجاني بالكامل — لا توجد أي رسوم على المالك.</span>
+          {/* بانر مهم */}
+          <div className="rounded-xl border border-emerald-300/60 bg-emerald-50 p-4 text-center text-emerald-900">
+            <p className="font-bold">
+              🎉 إعلان مجاني بالكامل للمالك — 0% عمولة
             </p>
-            
-            <Button 
-              onClick={openOwnerContact} 
-              disabled={loadingOwnerNumber} 
-              className="gap-2 bg-emerald-600 text-white hover:bg-emerald-700 px-8 py-5 text-base font-bold shadow-lg shadow-emerald-600/20"
-            >
-              <MessageCircle className="h-5 w-5" />
-              {loadingOwnerNumber ? 'جارٍ التحويل...' : 'تواصل لعرض شقتك مجاناً'}
-            </Button>
-            
-            <div className="mt-4 flex flex-wrap items-center justify-center gap-3 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-emerald-800">
-                <Percent className="h-3 w-3" />
-                0% عمولة
-              </span>
-              <span className="flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-emerald-800">
-                <Images className="h-3 w-3" />
-                تصوير احترافي مجاني
-              </span>
-              <span className="flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-emerald-800">
-                <Users className="h-3 w-3" />
-                وصول لآلاف الطلاب
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* ديالوج احتياطي: يظهر فقط لو رقم واتساب المالك غير مُعدّ من لوحة التحكم */}
-      <Dialog open={showOwnerContact} onOpenChange={setShowOwnerContact}>
-        <DialogContent className="max-w-sm" dir="rtl">
-          <DialogHeader>
-            <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/15">
-              <KeyRound className="h-7 w-7 text-primary" />
+            <p className="mt-1 text-sm">
+              الطالب يدفع <b>25%</b> مقسمة على دفعتين:{' '}
+              <b>12.5%</b> عند تأكيد الحجز +{' '}
+              <b>12.5%</b> أثناء المعاينة.
+            </p>
+          </div>
+
+          {/* 1 */}
+          <section className="rounded-2xl border border-border/70 bg-card p-5 sm:p-6">
+            <h2 className="mb-4 text-lg font-bold text-primary">
+              1. سياسة حجز الشقة والدفع (خاص بالطالب)
+            </h2>
+
+            <div className="space-y-3 text-sm leading-relaxed text-foreground/90">
+              <p>
+                <b>دفعة التأكيد (الأولى):</b> بمجرد تواصل الطالب مع المنصة
+                واختيار الشقة لتأكيد الحجز، يلتزم بدفع{' '}
+                <b>12.5% من قيمة الإيجار الشهري</b> خلال{' '}
+                <b>48 ساعة (يومان)</b> كحد أقصى من لحظة التواصل لتأكيد الحجز.
+                ولا يُعتبر الحجز مؤكدًا إلا بعد إتمام الدفع.
+              </p>
+
+              <p>
+                <b>دفعة المعاينة (الثانية):</b> عند الذهاب للمعاينة والاتفاق
+                على الشقة، يلتزم الطالب بدفع{' '}
+                <b>12.5% إضافية</b> من قيمة الإيجار الشهري، ليصبح إجمالي
+                رسوم المنصة <b>25%</b>.
+              </p>
+
+              <p className="rounded-lg border border-amber-300/60 bg-amber-50 p-3 text-amber-900">
+                <b>أسبقية الدفع لا أسبقية التواصل:</b> الشقق تُتاح بنظام
+                أسبقية الدفع وليس أسبقية التواصل. في حال وجود أكثر من طالب
+                يتفاوض على نفس الشقة في نفس الفترة، يتم تأكيد الحجز للطالب
+                الذي يقوم بالتحويل أولًا، وتُلغى المفاوضات الأخرى تلقائيًا.
+              </p>
+
+              <p>
+                <b>حالات استرداد رسوم الطالب:</b> نسبة الـ <b>25%</b> التي
+                يدفعها الطالب للمنصة <b>غير مستردة نهائيًا</b> كأصل عام،
+                ويُستثنى من ذلك الحالات الموضحة أدناه فقط.
+              </p>
+
+              <ul className="list-inside list-disc space-y-1 ps-2">
+                <li>وجود وصف خاطئ أو مضلل للشقة على المنصة.</li>
+
+                <li>
+                  وجود عيوب جوهرية غير مذكورة في الإعلان (مثل: أعطال
+                  السباكة، انقطاع المياه، أو تلف الأثاث الأساسي).
+                </li>
+
+                <li>
+                  تراجع المالك بعد موافقته على الطالب وفق الحالات والرسوم
+                  الموضحة في القسم الرابع.
+                </li>
+              </ul>
+
+              <p className="rounded-lg border border-rose-300/60 bg-rose-50 p-3 text-rose-900">
+                <b>شروط تقديم طلب الاسترجاع:</b> للاستفادة من حق الاسترداد
+                في الحالات المستثناة أعلاه، يجب تقديم الطلب خلال{' '}
+                <b>أسبوع واحد (7 أيام)</b> من تاريخ الدفع كحد أقصى، مع
+                إرفاق صورة واضحة من إيصال التحويل (Screenshot) تُظهر تاريخ
+                ووقت التحويل بدقة.
+                <br />
+                بعد مرور الأسبوع، لا يُقبل أي طلب استرجاع وفق هذه السياسة.
+              </p>
             </div>
-            <DialogTitle className="text-center text-xl">لعرض شقتك</DialogTitle>
-            <DialogDescription className="text-center leading-relaxed">
-              التواصل غير متاح حاليًا — حاول لاحقًا.
-            </DialogDescription>
-          </DialogHeader>
-        </DialogContent>
-      </Dialog>
+          </section>
+
+          {/* 2 */}
+          <section className="rounded-2xl border border-border/70 bg-card p-5 sm:p-6">
+            <h2 className="mb-4 text-lg font-bold text-primary">
+              2. مسؤولية وصف العقار والتصوير (خاص بالمالك)
+            </h2>
+
+            <div className="space-y-3 text-sm leading-relaxed text-foreground/90">
+              <p>
+                <b>دقة البيانات والصور:</b> يلتزم المالك بتقديم وصف دقيق
+                وشامل لكافة تفاصيل الشقة وحالة الأثاث، وإرفاق صور واضحة
+                وحقيقية تمامًا.
+              </p>
+
+              <p>
+                <b>خدمة التصوير المخصصة:</b> إذا كانت الصور التي رفعها
+                المالك غير واضحة أو غير كافية، تقوم المنصة بإرسال فريق
+                مخصص من طرفها لتصوير الشقة بشكل احترافي، لضمان جودة العرض
+                على المنصة.
+              </p>
+
+              <p className="rounded-lg border border-rose-300/60 bg-rose-50 p-3 text-rose-900">
+                <b>عقوبة الوصف الخاطئ:</b> إذا تبيّن أثناء المعاينة وجود
+                وصف غير صحيح أو عيب مخفٍ لم يذكره المالك، مما أدى إلى
+                تراجع الطالب واسترداده لنسبة الـ <b>25%</b> التي دفعها
+                للمنصة، يتم فرض{' '}
+                <b>غرامة مالية على المالك تتراوح بين 7% و10% كحد أقصى</b>{' '}
+                (حسب قدر الخطأ وشدته)، ويتحمل المالك كامل المسؤولية
+                القانونية والمالية تجاه الطالب.{' '}
+                <b>لا يتم حظر المالك من المنصة.</b>
+              </p>
+            </div>
+          </section>
+
+          {/* 3 */}
+          <section className="rounded-2xl border border-border/70 bg-card p-5 sm:p-6">
+            <h2 className="mb-4 text-lg font-bold text-primary">
+              3. سياسة رسوم المالك وتكاليف الإعلان
+            </h2>
+
+            <div className="space-y-3 text-sm leading-relaxed text-foreground/90">
+              <p>
+                <b>رسوم النشر والتسويق:</b> نسبة المالك <b>0%</b> — الإعلان
+                والتسويق <b>مجاني بالكامل</b> للمالك. المنصة تتحمل جميع
+                تكاليف النشر والتسويق والتصوير الاحترافي.
+              </p>
+
+              <p>
+                <b>إلغاء الإعلان:</b> يحق للمالك إلغاء إعلانه في أي وقت{' '}
+                <b>قبل قيام أي طالب بدفع دفعة التأكيد (12.5%)</b> بدون أي
+                غرامات أو رسوم إضافية، لأن الإعلان مجاني.
+              </p>
+
+              <p className="rounded-lg border border-amber-300/60 bg-amber-50 p-3 text-amber-900">
+                <b>إلغاء الإعلان بعد دفع الطالب:</b> إذا قام طالب بدفع دفعة
+                التأكيد (12.5%) وقام المالك بإلغاء الإعلان بعد ذلك دون سبب
+                إلزامي تقبله المنصة، يتم فرض <b>غرامة 7%</b> على المالك
+                كرسوم إعلان وتسويق ومجهود تم بذله، ويلتزم برد كامل المبلغ
+                المستحق للطالب.
+              </p>
+            </div>
+          </section>
+
+          {/* 4 */}
+          <section className="rounded-2xl border border-border/70 bg-card p-5 sm:p-6">
+            <h2 className="mb-4 text-lg font-bold text-primary">
+              4. سياسة المعاينة وتراجع المالك
+            </h2>
+
+            <div className="space-y-3 text-sm leading-relaxed text-foreground/90">
+              <p>
+                <b>عدم الاتفاق الطبيعي:</b> في حال عدم التوافق أثناء
+                المعاينة لأسباب موضوعية خارجة عن أي مخالفة من المالك أو
+                الطالب، يسترد الطالب <b>الدفعة الأولى (12.5%)</b> كاملة،
+                ولا يُطلب منه دفع الدفعة الثانية.
+              </p>
+
+              <p className="rounded-lg border border-rose-300/60 bg-rose-50 p-3 text-rose-900">
+                <b>تراجع المالك بدون سبب إلزامي:</b> إذا كان المالك قد
+                وافق على الطالب ثم تراجع أو ألغى الحجز دون سبب إلزامي أو
+                مبرر تقبله المنصة، يلتزم المالك بدفع{' '}
+                <b>7% من قيمة الإيجار الشهري</b> كرسوم إعلان وتسويق ومجهود
+                تم بذله، ويسترد الطالب <b>12.5%</b> (دفعة التأكيد) وفق
+                السياسة.
+              </p>
+
+              <p className="rounded-lg border border-emerald-300/60 bg-emerald-50 p-3 text-emerald-900">
+                <b>تراجع المالك لسبب إلزامي:</b> إذا كان تراجع المالك
+                بسبب إلزامي أو ظرف قهري تقبله إدارة المنصة، يلتزم المالك
+                بدفع <b>4% من قيمة الإيجار الشهري</b> فقط كرسوم إعلان
+                وتسويق ومجهود تم بذله، ويسترد الطالب <b>12.5%</b> (دفعة
+                التأكيد) وفق السياسة.
+              </p>
+            </div>
+          </section>
+
+          {/* 5 */}
+          <section className="rounded-2xl border border-border/70 bg-card p-5 sm:p-6">
+            <h2 className="mb-4 text-lg font-bold text-primary">
+              5. آلية التعاقد وإخلاء المسؤولية التام
+            </h2>
+
+            <div className="space-y-3 text-sm leading-relaxed text-foreground/90">
+              <p>
+                <b>توقيع العقد المباشر:</b> يتم توقيع عقد الإيجار الرسمي
+                بين المالك والطالب وجهًا لوجه أثناء المعاينة، ويقوم الطالب
+                عند التوقيع بدفع المستحقات المباشرة للمالك، وهي:
+              </p>
+
+              <ul className="list-inside list-disc space-y-1 ps-2">
+                <li>
+                  <b>مبلغ التأمين:</b> يعادل قيمة شهر إيجار واحد، ويُسترد
+                  عند الإخلاء وفق الاتفاق بين الطرفين.
+                </li>
+
+                <li>
+                  <b>إيجار الشهر الأول:</b> يُدفع مقدمًا للمالك مباشرة.
+                </li>
+              </ul>
+
+              <p>
+                يتم الاتفاق بين الطرفين مباشرة على باقي التفاصيل الشخصية
+                وفواتير الخدمات.
+              </p>
+
+              <p className="rounded-lg border border-border bg-secondary/50 p-3">
+                <b>إخلاء مسؤولية المنصة التام:</b> ينتهي دور المنصة تمامًا
+                بمجرد توقيع عقد الإيجار بين المالك والطالب. المنصة غير
+                مسؤولة قانونيًا أو ماليًا عن أي نزاعات أو خلافات أو تأخر
+                في الإيجار أو تلفيات في الأثاث أو أي مشاكل تطرأ بين
+                الطرفين بعد توقيع العقد، وليس لها أي صلة أو تدخل في
+                تفاصيل العلاقة الإيجارية اللاحقة.
+              </p>
+            </div>
+          </section>
+
+          {/* الملخص */}
+          <section className="rounded-2xl border-2 border-primary/20 bg-primary/5 p-5 sm:p-6">
+            <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-primary">
+              <FileText className="h-5 w-5" />
+              ملخص سريع للأرقام والمهل الزمنية
+            </h2>
+
+            <div className="overflow-hidden rounded-xl border border-border bg-card">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[600px] text-sm">
+                  <tbody>
+                    {[
+                      [
+                        'نسبة رسوم المنصة (من الطالب)',
+                        '25% (12.5% تأكيد + 12.5% معاينة)',
+                        <Percent className="h-4 w-4 text-primary" key="p1" />,
+                      ],
+                      [
+                        'نسبة رسوم المنصة (من المالك)',
+                        '0% — إعلان مجاني',
+                        <CheckCircle
+                          className="h-4 w-4 text-emerald-600"
+                          key="p2"
+                        />,
+                      ],
+                      [
+                        'دفعة التأكيد (عند التواصل)',
+                        '12.5% — خلال 48 ساعة',
+                        <Clock
+                          className="h-4 w-4 text-primary"
+                          key="p3"
+                        />,
+                      ],
+                      [
+                        'دفعة المعاينة (عند الاتفاق)',
+                        '12.5% — أثناء المعاينة وقبل توقيع العقد',
+                        <Clock
+                          className="h-4 w-4 text-primary"
+                          key="p4"
+                        />,
+                      ],
+                      [
+                        'مهلة تقديم طلب استرجاع الطالب',
+                        'أسبوع واحد (7 أيام) من الدفع',
+                        <Clock
+                          className="h-4 w-4 text-primary"
+                          key="p5"
+                        />,
+                      ],
+                      [
+                        'غرامة المالك (تراجع بدون سبب إلزامي)',
+                        '7% من قيمة الإيجار الشهري — + استرداد الطالب لـ 12.5%',
+                        <AlertTriangle
+                          className="h-4 w-4 text-amber-600"
+                          key="p6"
+                        />,
+                      ],
+                      [
+                        'رسوم المالك (تراجع لسبب إلزامي)',
+                        '4% من قيمة الإيجار الشهري — + استرداد الطالب لـ 12.5%',
+                        <AlertTriangle
+                          className="h-4 w-4 text-amber-600"
+                          key="p7"
+                        />,
+                      ],
+                      [
+                        'غرامة المالك (وصف خاطئ)',
+                        '7% إلى 10% كحد أقصى (حسب الخطأ)',
+                        <AlertTriangle
+                          className="h-4 w-4 text-amber-600"
+                          key="p8"
+                        />,
+                      ],
+                      [
+                        'غرامة المالك (إلغاء بعد دفع الطالب)',
+                        '7% — + رد المبلغ المستحق للطالب',
+                        <AlertTriangle
+                          className="h-4 w-4 text-amber-600"
+                          key="p9"
+                        />,
+                      ],
+                    ].map(([label, value, icon], i) => (
+                      <tr
+                        key={i}
+                        className={i % 2 ? 'bg-secondary/40' : ''}
+                      >
+                        <td className="p-3 font-medium">
+                          <div className="flex items-center gap-2">
+                            {icon}
+                            <span>{label}</span>
+                          </div>
+                        </td>
+
+                        <td className="p-3 text-muted-foreground">
+                          {value}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          {/* Footer */}
+          <p className="pt-1 text-center text-xs text-muted-foreground">
+            منصة سكنك — المنيا، جمهورية مصر العربية | هذه الوثيقة سارية
+            اعتبارًا من تاريخ اعتمادها من إدارة المنصة
+          </p>
+
+          {/* العودة */}
+          <div className="pt-2 text-center">
+            <Button
+              onClick={() => navigate('/')}
+              variant="outline"
+              className="gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              العودة للرئيسية
+            </Button>
+          </div>
+
+        </div>
+      </div>
     </div>
   );
 }
+```

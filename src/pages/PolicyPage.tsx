@@ -1,4 +1,3 @@
-```tsx
 import { ShieldCheck, Percent, Clock, AlertTriangle, CheckCircle, FileText, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router';

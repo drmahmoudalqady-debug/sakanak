@@ -12,15 +12,16 @@ import {
 import {
   Plus, Pencil, Trash2, LogOut, Building2, Users as UsersIcon,
   Phone, Mail, GraduationCap, CalendarDays, Loader2, ChevronDown,
-  Settings as SettingsIcon, Save, KeyRound, MessageCircle,
+  Settings as SettingsIcon, Save, KeyRound, MessageCircle, BarChart3,
 } from 'lucide-react';
 import type { Listing, Student, Region, Gender, SiteSettings } from '@/lib/types';
-import { REGION_LABELS, GENDER_LABELS, STATUS_LABELS } from '@/lib/types';
+import { REGION_LABELS, GENDER_LABELS, STATUS_LABELS, USER_TYPE_LABELS } from '@/lib/types';
 import {
   subscribeAdmin, adminLogout, deleteListing, getStudents, deleteStudent,
   getSiteSettings, updateSiteSettings,
 } from '@/lib/data-service';
 import ListingFormDialog from '@/components/admin/ListingFormDialog';
+import AnalyticsTab from '@/components/admin/AnalyticsTab';
 import { useApp } from '@/context/AppContext';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -173,6 +174,10 @@ export default function AdminDashboardPage() {
             <SettingsIcon className="h-4 w-4" />
             الإعدادات
           </TabsTrigger>
+          <TabsTrigger value="analytics" className="gap-2">
+            <BarChart3 className="h-4 w-4" />
+            الإحصائيات
+          </TabsTrigger>
         </TabsList>
 
         {/* ================= تبويب الشقق ================= */}
@@ -297,6 +302,11 @@ export default function AdminDashboardPage() {
                       <div className="border-t border-border/70 p-4 pt-3">
                         <div className="grid gap-2 text-sm sm:grid-cols-2">
                           <div className="flex items-center gap-2">
+                            <UsersIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                            <span className="text-muted-foreground">نوع الحساب:</span>
+                            <span className="font-medium">{USER_TYPE_LABELS[s.user_type]}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
                             <GraduationCap className="h-4 w-4 shrink-0 text-muted-foreground" />
                             <span className="text-muted-foreground">الكلية:</span>
                             <span className="font-medium">{s.college}</span>
@@ -392,6 +402,11 @@ export default function AdminDashboardPage() {
               </Button>
             </form>
           )}
+        </TabsContent>
+
+        {/* ================= تبويب الإحصائيات ================= */}
+        <TabsContent value="analytics">
+          <AnalyticsTab />
         </TabsContent>
       </Tabs>
 

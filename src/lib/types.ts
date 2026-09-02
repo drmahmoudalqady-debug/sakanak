@@ -15,13 +15,45 @@ export interface Listing {
   created_at: number;        // timestamp
 }
 
+export type UserType = 'male_student' | 'female_student' | 'owner';
+
 export interface Student {
-  id: string;                // uid من Firebase Auth
+  id: string;                // uid من Supabase Auth
   full_name: string;
   college: string;
   phone: string;
   email: string;
+  user_type: UserType;       // طالب / طالبة / مالك
   created_at: number;
+}
+
+export const USER_TYPE_LABELS: Record<UserType, string> = {
+  male_student: 'طالب',
+  female_student: 'طالبة',
+  owner: 'مالك',
+};
+
+// ---------- الإحصائيات ----------
+export type AnalyticsEventType = 'page_view' | 'listing_view' | 'whatsapp_click';
+
+export interface AnalyticsEvent {
+  id: string;
+  event_type: AnalyticsEventType;
+  listing_id: string | null;
+  region: Region | null;
+  page_path: string | null;
+  created_at: string; // ISO timestamp من Supabase
+}
+
+export interface AnalyticsSummary {
+  totalPageViews: number;
+  totalListingViews: number;
+  totalWhatsappClicks: number;
+  conversionRate: number; // (whatsapp / listingViews) * 100
+  dailyActivity: { date: string; page_view: number; listing_view: number; whatsapp_click: number }[];
+  topListings: { listing_id: string; title: string; views: number }[];
+  regionBreakdown: { region: Region; count: number }[];
+  recentEvents: (AnalyticsEvent & { listing_title?: string })[];
 }
 
 // إعدادات عامة للموقع يتحكم فيها الأدمن من لوحة التحكم

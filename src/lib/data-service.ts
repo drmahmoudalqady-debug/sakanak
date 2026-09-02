@@ -5,7 +5,7 @@
 // ============================================================
 import { supabase, isSupabaseConfigured, SUPABASE_BUCKET, ADMIN_EMAIL } from './supabase';
 import { DEMO_LISTINGS } from './demo-data';
-import type { Listing, Student, SiteSettings } from './types';
+import type { Listing, Student, SiteSettings, UserType, AnalyticsEventType, AnalyticsSummary } from './types';
 import { compressImage } from './image-utils';
 import type { User } from '@supabase/supabase-js';
 
@@ -237,6 +237,7 @@ export interface StudentSignupData {
   phone: string;
   email: string;
   password: string;
+  user_type: UserType;
 }
 
 // إنشاء حساب طالب + تسجيل دخوله تلقائيًا
@@ -252,6 +253,7 @@ export async function signupStudent(data: StudentSignupData): Promise<void> {
       college: data.college,
       phone: data.phone,
       email: data.email,
+      user_type: data.user_type,
       created_at: Date.now(),
     };
     students.push(student);
@@ -277,6 +279,7 @@ export async function signupStudent(data: StudentSignupData): Promise<void> {
     college: data.college,
     phone: data.phone,
     email: data.email,
+    user_type: data.user_type,
   });
   if (insertError) throw new Error(`فشل حفظ بيانات التسجيل: ${insertError.message}`);
 }

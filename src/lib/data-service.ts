@@ -403,3 +403,164 @@ export async function updateSiteSettings(settings: Partial<SiteSettings>): Promi
   const { error } = await supabase.from('site_settings').update(settings).eq('id', 1);
   if (error) throw new Error(`فشل حفظ الإعدادات: ${error.message}`);
 }
+// ============================================================
+// الإحصائيات (Analytics)
+// ============================================================
+// ملاحظة: التسجيل (logEvent) يعمل في وضع Supabase فقط — التتبع في الوضع
+// التجريبي (Demo) غير مفيد لأن كل زائر يشوف بياناته المحلية فقط.
+
+// دالة داخلية عامة لتسجيل أي حدث — لا ترمي أي خطأ للمستخدم أبدًا
+// (فشل التتبع يجب ألا يعطّل تجربة الزائر العادي)
+async function logEvent(
+  event_type: AnalyticsEventType,
+  extra?: { listing_id?: string; region?: string; page_path?: string }
+): Promise<void> {
+  if (!isSupabaseConfigured || !supabase) return;
+  try {
+    await supabase.from('analytics_events').insert({
+      event_type,
+      listing_id: extra?.listing_id ?? null,
+      region: extra?.region ?? null,
+      page_path: extra?.page_path ?? null,
+    });
+  } catch {
+    // تجاهل أي فشل في التتبع تمامًا — لا يجب أن يؤثر على تجربة الزائر
+  }
+}
+
+export function logPageView(page_path: string): void {
+  void logEvent('page_view', { page_path });
+}
+
+export function logListingView(listing_id: string, region: string): void {
+  void logEvent('listing_view', { listing_id, region });
+}
+
+export function logWhatsappClick(listing_id: string, region: string): void {
+  void logEvent('whatsapp_click', { listing_id, region });
+}
+
+// جلب ملخص شامل للإحصائيات بين تاريخين (للأدمن فقط)
+// startDate/endDate بصيغة ISO (مثال: '2026-08-01') — endDate اختياري (افتراضيًا الآن)
+export async function getAnalyticsSummary(startDate: string, endDate?: string): Promise<AnalyticsSummary> {
+  const empty: AnalyticsSummary = {
+    totalPageViews: 0,
+    totalListingViews: 0,
+    totalWhatsappClicks: 0,
+    conversionRate: 0,
+    dailyActivity: [],
+    topListings: [],
+    regionBreakdown: [],
+    recentEvents: [],
+  };
+  if (!isSupabaseConfigured || !supabase) return empty;
+
+  const endIso = endDate ? `${endDate}T23:59:59` : new Date().toISOString();
+  const startIso = `${startDate}T00:00:00`;
+
+  // نجيب كل الأحداث في المدى، ونحسب كل الملخصات من نفس النتيجة (استعلام واحد فقط)
+  const { data: events, error } = await supabase
+    .from('analytics_events')
+    .select('id, event_type, listing_id, region, page_path, created_at')
+    .gte('created_at', startIso)
+    .lte('created_at', endIso)
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(`فشل تحميل الإحصائيات: ${error.message}`);
+
+  const rows = events ?? [];
+
+  const totalPageViews = rows.filter((r) => r.event_type === 'page_view').length;
+  const totalListingViews = rows.filter((r) => r.event_type === 'listing_view').length;
+  const totalWhatsappClicks = rows.filter((r) => r.event_type === 'whatsapp_click').length;
+  const conversionRate = totalListingViews > 0
+    ? Math.round((totalWhatsappClicks / totalListingViews) * 1000) / 10
+    : 0;
+
+  // النشاط اليومي (آخر 30 يوم من المدى المحدد كحد أقصى للرسم البياني)
+  const dailyMap = new Map<string, { page_view: number; listing_view: number; whatsapp_click: number }>();
+  for (const r of rows) {
+    const day = r.created_at.slice(0, 10); // YYYY-MM-DD
+    if (!dailyMap.has(day)) dailyMap.set(day, { page_view: 0, listing_view: 0, whatsapp_click: 0 });
+    const entry = dailyMap.get(day)!;
+    entry[r.event_type as AnalyticsEventType]++;
+  }
+  const dailyActivity = Array.from(dailyMap.entries())
+    .map(([date, counts]) => ({ date, ...counts }))
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(-30);
+
+  // أكثر الشقق مشاهدة (حسب listing_view)
+  const listingViewCounts = new Map<string, number>();
+  for (const r of rows) {
+    if (r.event_type === 'listing_view' && r.listing_id) {
+      listingViewCounts.set(r.listing_id, (listingViewCounts.get(r.listing_id) ?? 0) + 1);
+    }
+  }
+  let topListings: AnalyticsSummary['topListings'] = [];
+  if (listingViewCounts.size > 0) {
+    const topIds = Array.from(listingViewCounts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([id]) => id);
+    const { data: listingsData } = await supabase
+      .from('listings')
+      .select('id, title')
+      .in('id', topIds);
+    const titleMap = new Map((listingsData ?? []).map((l) => [l.id, l.title]));
+    topListings = topIds.map((id) => ({
+      listing_id: id,
+      title: titleMap.get(id) ?? '(شقة محذوفة)',
+      views: listingViewCounts.get(id) ?? 0,
+    }));
+  }
+
+  // التوزيع حسب المنطقة (لجميع أنواع الأحداث المرتبطة بمنطقة)
+  const regionMap = new Map<string, number>();
+  for (const r of rows) {
+    if (r.region) regionMap.set(r.region, (regionMap.get(r.region) ?? 0) + 1);
+  }
+  const regionBreakdown = Array.from(regionMap.entries()).map(([region, count]) => ({
+    region: region as AnalyticsSummary['regionBreakdown'][number]['region'],
+    count,
+  }));
+
+  // آخر 50 حدث مع عنوان الشقة (لو الحدث مرتبط بشقة)
+  const recentRaw = rows.slice(0, 50);
+  const recentListingIds = Array.from(new Set(recentRaw.map((r) => r.listing_id).filter(Boolean))) as string[];
+  let recentTitleMap = new Map<string, string>();
+  if (recentListingIds.length > 0) {
+    const { data: recentListingsData } = await supabase
+      .from('listings')
+      .select('id, title')
+      .in('id', recentListingIds);
+    recentTitleMap = new Map((recentListingsData ?? []).map((l) => [l.id, l.title]));
+  }
+  const recentEvents = recentRaw.map((r) => ({
+    ...r,
+    listing_title: r.listing_id ? recentTitleMap.get(r.listing_id) : undefined,
+  })) as AnalyticsSummary['recentEvents'];
+
+  return {
+    totalPageViews,
+    totalListingViews,
+    totalWhatsappClicks,
+    conversionRate,
+    dailyActivity,
+    topListings,
+    regionBreakdown,
+    recentEvents,
+  };
+}
+
+// حذف الأحداث الأقدم من تاريخ معيّن (يدوي بالكامل — الأدمن يقرر متى ينفّذه)
+// beforeDate بصيغة ISO (مثال: '2026-08-01') — يحذف كل حدث created_at أقدم من هذا التاريخ
+export async function deleteAnalyticsEventsBefore(beforeDate: string): Promise<number> {
+  if (!isSupabaseConfigured || !supabase) return 0;
+  const { data, error } = await supabase
+    .from('analytics_events')
+    .delete()
+    .lt('created_at', `${beforeDate}T00:00:00`)
+    .select('id');
+  if (error) throw new Error(`فشل حذف الأحداث القديمة: ${error.message}`);
+  return (data ?? []).length;
+}

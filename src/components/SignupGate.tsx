@@ -6,9 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { GraduationCap, Loader2, MessageCircle, KeyRound, Copy, Check } from 'lucide-react';
 import { signupStudent, loginStudent, getSiteSettings } from '@/lib/data-service';
 import { isSupabaseConfigured } from '@/lib/supabase';
+import type { UserType } from '@/lib/types';
+import { USER_TYPE_LABELS } from '@/lib/types';
 
 interface Props {
   open: boolean;
@@ -39,6 +42,7 @@ export default function SignupGate({ open, onClose, onSuccess, context = 'whatsa
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [userType, setUserType] = useState<UserType>('male_student');
 
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -86,6 +90,7 @@ export default function SignupGate({ open, onClose, onSuccess, context = 'whatsa
         phone: phone.trim(),
         email: email.trim(),
         password,
+        user_type: userType,
       });
       onSuccess(); // دخول تلقائي + فتح واتساب
     } catch (err) {
@@ -137,6 +142,29 @@ export default function SignupGate({ open, onClose, onSuccess, context = 'whatsa
           {/* نموذج تسجيل جديد */}
           <TabsContent value="signup">
             <form onSubmit={handleSignup} className="space-y-3 pt-2">
+              <div className="space-y-1.5">
+                <Label>نوع الحساب</Label>
+                <RadioGroup
+                  value={userType}
+                  onValueChange={(v) => setUserType(v as UserType)}
+                  className="grid grid-cols-3 gap-2"
+                >
+                  {(Object.keys(USER_TYPE_LABELS) as UserType[]).map((type) => (
+                    <Label
+                      key={type}
+                      htmlFor={`user-type-${type}`}
+                      className={`flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border px-2 py-2 text-sm transition-colors ${
+                        userType === type
+                          ? 'border-primary bg-primary/10 font-semibold text-primary'
+                          : 'border-border/70 text-muted-foreground'
+                      }`}
+                    >
+                      <RadioGroupItem value={type} id={`user-type-${type}`} className="sr-only" />
+                      {USER_TYPE_LABELS[type]}
+                    </Label>
+                  ))}
+                </RadioGroup>
+              </div>
               <div className="space-y-1.5">
                 <Label htmlFor="full_name">الاسم الكامل</Label>
                 <Input id="full_name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="مثال: أحمد محمد علي" />

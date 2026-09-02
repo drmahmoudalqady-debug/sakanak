@@ -10,6 +10,7 @@ import { openWhatsApp } from '@/lib/whatsapp';
 import { useApp } from '@/context/AppContext';
 import SignupGate from './SignupGate';
 import PolicyGate, { hasAgreedToPolicy } from './PolicyGate';
+import { logListingView, logWhatsappClick } from '@/lib/data-service';
 
 interface Props {
   listing: Listing | null;
@@ -22,7 +23,12 @@ export default function ListingDetail({ listing, onClose }: Props) {
   const [gateOpen, setGateOpen] = useState(false);
   const [policyOpen, setPolicyOpen] = useState(false);
 
-  useEffect(() => { setImgIndex(0); setGateOpen(false); setPolicyOpen(false); }, [listing?.id]);
+  useEffect(() => {
+    setImgIndex(0);
+    setGateOpen(false);
+    setPolicyOpen(false);
+    if (listing) logListingView(listing.id, listing.region);
+  }, [listing?.id]);
 
   if (!listing) return null;
   const images = listing.images.length ? listing.images : [''];
@@ -38,6 +44,7 @@ export default function ListingDetail({ listing, onClose }: Props) {
 
   function proceedAfterPolicy() {
     if (student) {
+      logWhatsappClick(listing!.id, listing!.region);
       openWhatsApp(listing!);
     } else {
       setGateOpen(true);
@@ -155,6 +162,7 @@ export default function ListingDetail({ listing, onClose }: Props) {
         onClose={() => setGateOpen(false)}
         onSuccess={() => {
           setGateOpen(false);
+          logWhatsappClick(listing.id, listing.region);
           openWhatsApp(listing);
         }}
       />

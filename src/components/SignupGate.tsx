@@ -74,8 +74,8 @@ export default function SignupGate({ open, onClose, onSuccess, context = 'whatsa
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
     setError('');
-    const isOwner = userType === 'owner';
-    if (!fullName.trim() || (!isOwner && !college.trim()) || !phone.trim() || !email.trim() || !password) {
+   const isOwner = userType === 'owner';
+if (!fullName.trim() || (!isOwner && !college.trim()) || !phone.trim() || !email.trim() || !password) {
       setError('من فضلك أكمل كل الحقول');
       return;
     }
@@ -87,7 +87,7 @@ export default function SignupGate({ open, onClose, onSuccess, context = 'whatsa
     try {
       await signupStudent({
         full_name: fullName.trim(),
-        college: isOwner ? '' : college.trim(),
+college: isOwner ? '' : college.trim(),
         phone: phone.trim(),
         email: email.trim(),
         password,
@@ -149,11 +149,11 @@ export default function SignupGate({ open, onClose, onSuccess, context = 'whatsa
                 <Input id="full_name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="مثال: أحمد محمد علي" />
               </div>
               {userType !== 'owner' && (
-                <div className="space-y-1.5">
-                  <Label htmlFor="college">الكلية</Label>
-                  <Input id="college" value={college} onChange={(e) => setCollege(e.target.value)} placeholder="مثال: كلية الهندسة — جامعة المنيا" />
-                </div>
-              )}
+  <div className="space-y-1.5">
+    <Label htmlFor="college">الكلية</Label>
+    <Input id="college" value={college} onChange={(e) => setCollege(e.target.value)} placeholder="مثال: كلية الهندسة — جامعة المنيا" />
+  </div>
+)}
               <div className="space-y-1.5">
                 <Label htmlFor="phone">رقم الهاتف</Label>
                 <Input id="phone" type="tel" dir="ltr" className="text-end" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="01xxxxxxxxx" />

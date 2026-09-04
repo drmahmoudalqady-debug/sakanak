@@ -15,13 +15,13 @@ export default function ListingCard({ listing, onOpen }: Props) {
       className="card-glow group w-full overflow-hidden rounded-2xl border border-border/70 bg-card text-start"
     >
       {/* الصورة */}
-      <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+      <div className="relative aspect-[4/3] overflow-hidden bg-black/5">
         {listing.images[0] ? (
           <img
             src={listing.images[0]}
             alt={listing.title}
             loading="lazy"
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
           <div className="flex h-full items-center justify-center text-muted-foreground">

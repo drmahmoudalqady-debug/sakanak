@@ -16,8 +16,8 @@ import { USER_TYPE_LABELS } from '@/lib/types';
 interface Props {
   open: boolean;
   onClose: () => void;
-  onSuccess: () => void; // تُستدعى بعد نجاح التسجيل/الدخول
-  context?: 'whatsapp' | 'header'; // يغيّر نص الرسالة فقط
+  onSuccess: () => void;
+  context?: 'whatsapp' | 'header';
 }
 
 function friendlyError(err: unknown): string {
@@ -47,7 +47,6 @@ export default function SignupGate({ open, onClose, onSuccess, context = 'whatsa
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
 
-  // حالة "نسيت كلمة السر" — عرض رقم التواصل بدل إرسال إيميل
   const [forgotMode, setForgotMode] = useState(false);
   const [contactInfo, setContactInfo] = useState('');
   const [loadingContact, setLoadingContact] = useState(false);
@@ -74,26 +73,34 @@ export default function SignupGate({ open, onClose, onSuccess, context = 'whatsa
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
     setError('');
-   const isOwner = userType === 'owner';
-if (!fullName.trim() || (!isOwner && !college.trim()) || !phone.trim() || !email.trim() || !password) {
+    const isOwner = userType === 'owner';
+    
+    // المالك: اسم + رقم + إيميل فقط | الطالب: كل الحقول
+    if (!fullName.trim() || (!isOwner && !college.trim()) || !phone.trim() || !email.trim() || (!isOwner && !password)) {
       setError('من فضلك أكمل كل الحقول');
       return;
     }
-    if (password.length < 6) {
+    if (!isOwner && password.length < 6) {
       setError('كلمة السر يجب أن تكون 6 أحرف على الأقل');
       return;
     }
+    
     setLoading(true);
     try {
+      // لو مالك: ننشئ باسورد عشوائي تلقائي مش هيشوفه
+      const finalPassword = isOwner 
+        ? `owner-${Date.now()}-${Math.random().toString(36).slice(2, 10)}` 
+        : password;
+        
       await signupStudent({
         full_name: fullName.trim(),
-college: isOwner ? '' : college.trim(),
+        college: isOwner ? '' : college.trim(),
         phone: phone.trim(),
         email: email.trim(),
-        password,
+        password: finalPassword,
         user_type: userType,
       });
-      onSuccess(); // دخول تلقائي + فتح واتساب
+      onSuccess();
     } catch (err) {
       setError(friendlyError(err));
     } finally {
@@ -119,7 +126,31 @@ college: isOwner ? '' : college.trim(),
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-md" dir="rtl">
         <DialogHeader>
-          <div className={`mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-2xl ${context === 'header' ? 'bg-primary/15' :
+          <div className={`mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-2xl ${context === 'header' ? 'bg-primary/15' : 'bg-[#25D366]/15'}`}>
+            {context === 'header' ? (
+              <GraduationCap className="h-7 w-7 text-primary" />
+            ) : (
+              <MessageCircle className="h-7 w-7 text-[#25D366]" />
+            )}
+          </div>
+          <DialogTitle className="text-center">
+            {context === 'header' ? 'سجّل حسابك' : 'سجّل عشان تتواصل'}
+          </DialogTitle>
+          <DialogDescription className="text-center">
+            {context === 'header' 
+              ? 'إنشاء حساب جديد أو تسجيل الدخول' 
+              : 'التسجيل مرة واحدة فقط — بعدها تفتح واتساب مباشرة'}
+          </DialogDescription>
+        </DialogHeader>
+
+        <Tabs value={tab} onValueChange={(v) => { setTab(v as 'signup' | 'login'); setError(''); setForgotMode(false); }}>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="signup">حساب جديد</TabsTrigger>
+            <TabsTrigger value="login">دخول</TabsTrigger>
+          </TabsList>
+
+          {/* نموذج تسجيل جديد */}
+          <TabsContent value="signup">
             <form onSubmit={handleSignup} className="space-y-3 pt-2">
               <div className="space-y-1.5">
                 <Label>نوع الحساب</Label>
@@ -144,32 +175,36 @@ college: isOwner ? '' : college.trim(),
                   ))}
                 </RadioGroup>
               </div>
+              
               <div className="space-y-1.5">
                 <Label htmlFor="full_name">الاسم الكامل</Label>
                 <Input id="full_name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="مثال: أحمد محمد علي" />
               </div>
+              
               {userType !== 'owner' && (
-  <div className="space-y-1.5">
-    <Label htmlFor="college">الكلية</Label>
-    <Input id="college" value={college} onChange={(e) => setCollege(e.target.value)} placeholder="مثال: كلية الهندسة — جامعة المنيا" />
-  </div>
-)}
+                <div className="space-y-1.5">
+                  <Label htmlFor="college">الكلية</Label>
+                  <Input id="college" value={college} onChange={(e) => setCollege(e.target.value)} placeholder="مثال: كلية الهندسة — جامعة المنيا" />
+                </div>
+              )}
+              
               <div className="space-y-1.5">
                 <Label htmlFor="phone">رقم الهاتف</Label>
                 <Input id="phone" type="tel" dir="ltr" className="text-end" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="01xxxxxxxxx" />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="email">البريد الإلكتروني</Label>
-                  <Input id="email" type="email" dir="ltr" className="text-end" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@mail.com" />
-                </div>
+              
+              <div className="space-y-1.5">
+                <Label htmlFor="email">البريد الإلكتروني</Label>
+                <Input id="email" type="email" dir="ltr" className="text-end" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@mail.com" />
+              </div>
+              
+              {userType !== 'owner' && (
                 <div className="space-y-1.5">
                   <Label htmlFor="password">كلمة السر</Label>
                   <Input id="password" type="password" dir="ltr" className="text-end" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="6 أحرف على الأقل" />
                 </div>
-              </div>
+              )}
 
-              {/* نص الموافقة القانونية — قانون حماية البيانات الشخصية المصري */}
               <p className="rounded-lg bg-muted px-3 py-2 text-center text-[11px] leading-relaxed text-muted-foreground">
                 بالتسجيل، أوافق على استخدام بياناتي للتواصل بخصوص السكن الطلابي فقط
               </p>
@@ -180,6 +215,7 @@ college: isOwner ? '' : college.trim(),
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <GraduationCap className="h-4 w-4" />}
                 {loading ? 'جارٍ التسجيل...' : context === 'header' ? 'سجّل الآن' : 'سجّل وافتح واتساب'}
               </Button>
+              
               {!isSupabaseConfigured && (
                 <p className="text-center text-[11px] text-muted-foreground">
                   (وضع تجريبي — البيانات تحفظ في متصفحك فقط حتى ربط Supabase)
@@ -188,7 +224,7 @@ college: isOwner ? '' : college.trim(),
             </form>
           </TabsContent>
 
-          {/* نموذج دخول لطالب مسجل */}
+          {/* نموذج دخول */}
           <TabsContent value="login">
             {forgotMode ? (
               <div className="space-y-3 pt-2">

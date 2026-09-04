@@ -1,4 +1,4 @@
-// نموذج إضافة/تعديل شقة — يشمل رفع صور متعددة مع ضغط ومعاينة قبل الحفظ
+// نموذج إضافة/تعديل شقة — يشمل رفع صور متعددة مع ضغط ومعاينة وترتيب قبل الحفظ
 import { useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ImagePlus, Loader2, X } from 'lucide-react';
+import { ImagePlus, Loader2, X, ArrowUp, ArrowDown } from 'lucide-react';
 import type { Listing, Region, Gender } from '@/lib/types';
 import { REGION_LABELS, GENDER_LABELS, STATUS_LABELS } from '@/lib/types';
 import { addListing, updateListing, uploadListingImages } from '@/lib/data-service';
@@ -15,10 +15,14 @@ import { formatBytes } from '@/lib/image-utils';
 interface Props {
   open: boolean;
   onClose: () => void;
-  editing: Listing | null; // لو فيه شقة → وضع التعديل
+  editing: Listing | null;
 }
 
 const MAX_IMAGES = 8;
+
+type ImageItem =
+  | { type: 'existing'; url: string }
+  | { type: 'new'; file: File; preview: string };
 
 export default function ListingFormDialog({ open, onClose, editing }: Props) {
   const [region, setRegion] = useState<Region>('new-minya');
@@ -27,11 +31,7 @@ export default function ListingFormDialog({ open, onClose, editing }: Props) {
   const [description, setDescription] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [status, setStatus] = useState<Listing['status']>('available');
-
-  // الصور الموجودة (روابط محفوظة) + الصور الجديدة (ملفات)
-  const [existingImages, setExistingImages] = useState<string[]>([]);
-  const [newFiles, setNewFiles] = useState<File[]>([]);
-  const [newPreviews, setNewPreviews] = useState<string[]>([]);
+  const [imageItems, setImageItems] = useState<ImageItem[]>([]);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -45,30 +45,45 @@ export default function ListingFormDialog({ open, onClose, editing }: Props) {
       setDescription(editing?.description ?? '');
       setWhatsapp(editing?.whatsapp_number ?? '');
       setStatus(editing?.status ?? 'available');
-      setExistingImages(editing?.images ?? []);
-      setNewFiles([]);
-      setNewPreviews([]);
+      
+      const items: ImageItem[] = (editing?.images ?? []).map(url => ({ type: 'existing', url }));
+      setImageItems(items);
       setError('');
     }
   }, [open, editing]);
 
-  const totalImages = existingImages.length + newFiles.length;
-
   function handlePickFiles(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []).filter((f) => f.type.startsWith('image/'));
-    const room = MAX_IMAGES - totalImages;
+    const room = MAX_IMAGES - imageItems.length;
     const picked = files.slice(0, room);
-    setNewFiles((prev) => [...prev, ...picked]);
-    setNewPreviews((prev) => [...prev, ...picked.map((f) => URL.createObjectURL(f))]);
+    
+    const newItems: ImageItem[] = picked.map(file => ({
+      type: 'new',
+      file,
+      preview: URL.createObjectURL(file),
+    }));
+    
+    setImageItems(prev => [...prev, ...newItems]);
     if (files.length > room) setError(`الحد الأقصى ${MAX_IMAGES} صور لكل شقة`);
     else setError('');
     e.target.value = '';
   }
 
-  function removeNewImage(index: number) {
-    URL.revokeObjectURL(newPreviews[index]);
-    setNewFiles((prev) => prev.filter((_, i) => i !== index));
-    setNewPreviews((prev) => prev.filter((_, i) => i !== index));
+  function removeImage(index: number) {
+    const item = imageItems[index];
+    if (item.type === 'new') URL.revokeObjectURL(item.preview);
+    setImageItems(prev => prev.filter((_, i) => i !== index));
+  }
+
+  function moveImage(index: number, direction: 'up' | 'down') {
+    if (direction === 'up' && index === 0) return;
+    if (direction === 'down' && index === imageItems.length - 1) return;
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    setImageItems(prev => {
+      const next = [...prev];
+      [next[index], next[newIndex]] = [next[newIndex], next[index]];
+      return next;
+    });
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -79,13 +94,24 @@ export default function ListingFormDialog({ open, onClose, editing }: Props) {
     if (!title.trim()) return setError('اكتب عنوان الشقة');
     if (!description.trim()) return setError('اكتب وصف الشقة');
     if (cleanNumber.length < 10) return setError('اكتب رقم واتساب صحيح بالصيغة الدولية (مثال: 2010xxxxxxxx)');
-    if (totalImages === 0) return setError('أضف صورة واحدة على الأقل');
+    if (imageItems.length === 0) return setError('أضف صورة واحدة على الأقل');
 
     setSaving(true);
     try {
-      // ضغط الصور الجديدة ورفعها
+      // نرفع الصور الجديدة بالترتيب
+      const newFiles = imageItems.filter(i => i.type === 'new').map(i => (i as Extract<ImageItem, { type: 'new' }>).file);
       const uploadedUrls = newFiles.length ? await uploadListingImages(newFiles) : [];
-      const images = [...existingImages, ...uploadedUrls];
+      
+      // ندمج الصور بالترتيب المحدد
+      const images: string[] = [];
+      let uploadIdx = 0;
+      for (const item of imageItems) {
+        if (item.type === 'existing') {
+          images.push(item.url);
+        } else {
+          images.push(uploadedUrls[uploadIdx++]);
+        }
+      }
 
       const data = {
         region, gender,
@@ -97,7 +123,7 @@ export default function ListingFormDialog({ open, onClose, editing }: Props) {
       };
 
       if (editing) {
-        await updateListing(editing.id, data); // يتحفظ فورًا ويظهر للزوار لحظيًا
+        await updateListing(editing.id, data);
       } else {
         await addListing(data);
       }
@@ -174,11 +200,11 @@ export default function ListingFormDialog({ open, onClose, editing }: Props) {
           {/* رفع الصور */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>صور الشقة ({totalImages}/{MAX_IMAGES})</Label>
+              <Label>صور الشقة ({imageItems.length}/{MAX_IMAGES})</Label>
               <Button
                 type="button" variant="outline" size="sm"
                 onClick={() => fileInputRef.current?.click()}
-                disabled={totalImages >= MAX_IMAGES}
+                disabled={imageItems.length >= MAX_IMAGES}
                 className="gap-1.5"
               >
                 <ImagePlus className="h-4 w-4" />
@@ -190,38 +216,63 @@ export default function ListingFormDialog({ open, onClose, editing }: Props) {
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              الصور تُضغط تلقائيًا لأقل من 300 كيلوبايت قبل الرفع لتسريع الموقع.
+              الصور تُضغط تلقائيًا لأقل من 300 كيلوبايت قبل الرفع. استخدم الأسهم لتحديد الترتيب.
             </p>
 
-            {totalImages > 0 ? (
-              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                {existingImages.map((src, i) => (
-                  <div key={`ex-${i}`} className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-border">
-                    <img src={src} alt="" className="h-full w-full object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => setExistingImages((prev) => prev.filter((_, x) => x !== i))}
-                      className="absolute end-1 top-1 rounded-full bg-black/60 p-1 text-white opacity-0 transition group-hover:opacity-100"
-                      aria-label="حذف الصورة"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                ))}
-                {newPreviews.map((src, i) => (
-                  <div key={`new-${i}`} className="group relative aspect-[4/3] overflow-hidden rounded-lg border-2 border-dashed border-primary/50">
-                    <img src={src} alt="" className="h-full w-full object-cover" />
-                    <span className="absolute start-1 top-1 rounded bg-primary px-1.5 py-0.5 text-[10px] text-primary-foreground">
-                      جديدة · {formatBytes(newFiles[i]?.size ?? 0)}
+            {imageItems.length > 0 ? (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {imageItems.map((item, i) => (
+                  <div key={i} className="group relative overflow-hidden rounded-lg border border-border bg-black/5">
+                    <div className="aspect-[4/3]">
+                      <img 
+                        src={item.type === 'existing' ? item.url : item.preview} 
+                        alt="" 
+                        className="h-full w-full object-contain" 
+                      />
+                    </div>
+                    
+                    {/* أزرار الترتيب */}
+                    <div className="absolute start-1 top-1 flex gap-1">
+                      <button
+                        type="button"
+                        onClick={() => moveImage(i, 'up')}
+                        disabled={i === 0}
+                        className="rounded bg-black/60 p-1 text-white transition hover:bg-black/80 disabled:opacity-30"
+                        title="أعلى"
+                      >
+                        <ArrowUp className="h-3 w-3" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveImage(i, 'down')}
+                        disabled={i === imageItems.length - 1}
+                        className="rounded bg-black/60 p-1 text-white transition hover:bg-black/80 disabled:opacity-30"
+                        title="أسفل"
+                      >
+                        <ArrowDown className="h-3 w-3" />
+                      </button>
+                    </div>
+
+                    {/* رقم الترتيب */}
+                    <span className="absolute bottom-1 start-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] text-white">
+                      {i + 1}
                     </span>
+
+                    {/* حذف */}
                     <button
                       type="button"
-                      onClick={() => removeNewImage(i)}
-                      className="absolute end-1 top-1 rounded-full bg-black/60 p-1 text-white opacity-0 transition group-hover:opacity-100"
+                      onClick={() => removeImage(i)}
+                      className="absolute end-1 top-1 rounded-full bg-black/60 p-1 text-white transition hover:bg-red-500"
                       aria-label="حذف الصورة"
                     >
                       <X className="h-3.5 w-3.5" />
                     </button>
+
+                    {item.type === 'new' && (
+                      <span className="absolute bottom-1 end-1 rounded bg-primary px-1.5 py-0.5 text-[10px] text-primary-foreground">
+                        جديدة · {formatBytes(item.file.size)}
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>

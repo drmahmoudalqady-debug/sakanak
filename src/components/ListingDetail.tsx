@@ -33,7 +33,6 @@ export default function ListingDetail({ listing, onClose }: Props) {
   if (!listing) return null;
   const images = listing.images.length ? listing.images : [''];
 
-  // زرار واتساب: أولوية القواعد (مرة واحدة للأبد) ثم التسجيل ثم فتح واتساب
   function handleWhatsApp() {
     if (!hasAgreedToPolicy()) {
       setPolicyOpen(true);
@@ -56,9 +55,13 @@ export default function ListingDetail({ listing, onClose }: Props) {
       <Dialog open={!!listing} onOpenChange={(v) => !v && onClose()}>
         <DialogContent className="max-h-[92vh] max-w-2xl overflow-y-auto p-0" dir="rtl">
           {/* معرض الصور */}
-          <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted sm:aspect-[16/9]">
+          <div className="relative aspect-[4/3] w-full overflow-hidden bg-black/5 sm:aspect-[16/9]">
             {images[imgIndex] ? (
-              <img src={images[imgIndex]} alt={`${listing.title} — صورة ${imgIndex + 1}`} className="h-full w-full object-cover" />
+              <img 
+                src={images[imgIndex]} 
+                alt={`${listing.title} — صورة ${imgIndex + 1}`} 
+                className="h-full w-full object-contain" 
+              />
             ) : (
               <div className="flex h-full items-center justify-center text-muted-foreground">
                 <ImageIcon className="h-12 w-12" />
@@ -99,7 +102,7 @@ export default function ListingDetail({ listing, onClose }: Props) {
                   onClick={() => setImgIndex(i)}
                   className={`h-16 w-20 shrink-0 overflow-hidden rounded-lg border-2 transition ${i === imgIndex ? 'border-primary' : 'border-transparent opacity-60 hover:opacity-100'}`}
                 >
-                  <img src={src} alt="" className="h-full w-full object-cover" loading="lazy" />
+                  <img src={src} alt="" className="h-full w-full object-contain" loading="lazy" />
                 </button>
               ))}
             </div>
@@ -121,11 +124,12 @@ export default function ListingDetail({ listing, onClose }: Props) {
               </div>
             </div>
 
-            <p className="whitespace-pre-line rounded-xl bg-muted/60 p-4 text-sm leading-relaxed text-foreground/90">
+            {/* وصف بسكرول لو طويل */}
+            <div className="max-h-48 overflow-y-auto whitespace-pre-line rounded-xl bg-muted/60 p-4 text-sm leading-relaxed text-foreground/90">
               {listing.description}
-            </p>
+            </div>
 
-            {/* زرار واتساب — أهم عنصر وظيفي */}
+            {/* زرار واتساب */}
             <Button
               onClick={handleWhatsApp}
               disabled={listing.status === 'reserved'}
@@ -146,7 +150,6 @@ export default function ListingDetail({ listing, onClose }: Props) {
         </DialogContent>
       </Dialog>
 
-      {/* بوابة القواعد — تظهر مرة واحدة فقط قبل أي تسجيل أو تواصل */}
       <PolicyGate
         open={policyOpen}
         onClose={() => setPolicyOpen(false)}
@@ -156,7 +159,6 @@ export default function ListingDetail({ listing, onClose }: Props) {
         }}
       />
 
-      {/* بوابة التسجيل — بعد النجاح يفتح واتساب مباشرة */}
       <SignupGate
         open={gateOpen}
         onClose={() => setGateOpen(false)}
